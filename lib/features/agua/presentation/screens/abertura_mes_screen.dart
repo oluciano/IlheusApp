@@ -18,10 +18,12 @@ class AberturaMesScreen extends ConsumerWidget {
     final temMesSelecionado = formState.mesAno != null;
 
     return PopScope(
-      canPop: !temMesSelecionado,
+      canPop: false,
       onPopInvoked: (didPop) {
-        if (didPop) return;
-        ref.read(aberturaMesFormProvider.notifier).reset();
+        if (!didPop) {
+          ref.read(aberturaMesFormProvider.notifier).reset();
+          context.go('/home');
+        }
       },
       child: Scaffold(
         appBar: AppBar(
@@ -30,7 +32,6 @@ class AberturaMesScreen extends ConsumerWidget {
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () {
                     ref.read(aberturaMesFormProvider.notifier).reset();
-                    ref.invalidate(mesesSalvosProvider);
                     context.go('/home');
                   },
                 )
@@ -101,10 +102,29 @@ class AberturaMesScreen extends ConsumerWidget {
             FilledButton.icon(
               onPressed: () async {
                 final mesAno = await MonthYearPickerSheet.show(context);
-                if (mesAno != null && context.mounted) {
+                if (mesAno == null || !context.mounted) return;
+
+                final jaExiste = await ref
+                    .read(aberturaMesFormProvider.notifier)
+                    .mesJaCadastrado(mesAno);
+
+                if (!context.mounted) return;
+
+                if (jaExiste) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'O mês $mesAno já está cadastrado. '
+                        'Selecione-o na lista para editar.',
+                      ),
+                      backgroundColor: Colors.orange,
+                      duration: const Duration(seconds: 4),
+                    ),
+                  );
+                } else {
                   ref
                       .read(aberturaMesFormProvider.notifier)
-                      .selecionarMes(mesAno);
+                      .abrirNovoMes(mesAno);
                 }
               },
               icon: const Icon(Icons.add),

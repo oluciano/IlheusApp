@@ -40,7 +40,7 @@ class HomeScreen extends ConsumerWidget {
                   onTap: () {
                     ref
                         .read(aberturaMesFormProvider.notifier)
-                        .selecionarMes(mesAno);
+                        .abrirMesExistente(mesAno);
                     context.go('/abertura-mes');
                   },
                 ),
@@ -52,7 +52,10 @@ class HomeScreen extends ConsumerWidget {
         error: (e, _) => Center(child: Text('Erro: $e')),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.go('/abertura-mes'),
+        onPressed: () {
+          ref.invalidate(aberturaMesFormProvider);
+          context.go('/abertura-mes');
+        },
         icon: const Icon(Icons.add),
         label: const Text('Novo Mês'),
       ),

@@ -7,7 +7,7 @@ import 'package:ilheus_app/features/agua/presentation/providers/abertura_mes_for
 import 'package:ilheus_app/features/agua/presentation/providers/database_providers.dart';
 
 final aberturaMesFormProvider =
-    StateNotifierProvider.autoDispose<AberturaMesNotifier, AberturaMesFormState>((ref) {
+    StateNotifierProvider<AberturaMesNotifier, AberturaMesFormState>((ref) {
   final repo = ref.watch(aberturaMesRepositoryProvider);
   final repository = repo ?? WebNotImplemented();
   return AberturaMesNotifier(repository);
@@ -19,9 +19,20 @@ class AberturaMesNotifier extends StateNotifier<AberturaMesFormState> {
   AberturaMesNotifier(this._repository)
       : super(const AberturaMesFormState());
 
-  void selecionarMes(String mesAno) {
+  /// Abre um novo mês com campos limpos (sem carregar dados existentes)
+  void abrirNovoMes(String mesAno) {
     state = state.mesSelecionado(mesAno);
-    _carregarDadosMes(mesAno);
+  }
+
+  /// Abre um mês existente carregando os dados salvos
+  Future<void> abrirMesExistente(String mesAno) async {
+    state = state.mesSelecionado(mesAno);
+    await _carregarDadosMes(mesAno);
+  }
+
+  /// Verifica se o mês já está cadastrado no banco
+  Future<bool> mesJaCadastrado(String mesAno) async {
+    return await _repository.mesSalvo(mesAno);
   }
 
   Future<void> _carregarDadosMes(String mesAno) async {
