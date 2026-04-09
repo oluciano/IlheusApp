@@ -1,0 +1,25 @@
+# Flutter
+.dart_tool/
+.packages
+build/
+*.iml
+dependency_overrides/
+
+# Android
+android/.gradle/
+android/.idea/
+android/app/key.properties
+android/local.properties
+
+# macOS
+**/ios/Flutter/.last_build_id
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
