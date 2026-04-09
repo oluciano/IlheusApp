@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "flutter": {
+      "source": "alinaqi/claude-bootstrap",
+      "sourceType": "github",
+      "computedHash": "93bba10cd584b47fc614fa2765b7cd89bcfb9e51f7a95d5c16ebfa4c31fcca5c"
+    },
+    "flutter-architecting-apps": {
+      "source": "flutter/skills",
+      "sourceType": "github",
+      "computedHash": "eb8640b807ea631973fa259880abf07d0cb0f26d327da9970e56fbfc95650ada"
+    },
+    "flutter-development": {
+      "source": "aj-geddes/useful-ai-prompts",
+      "sourceType": "github",
+      "computedHash": "898d4edc2f8e5f0ec0b2857b8845dbc58c69ab0bb41508161e798e358b60328a"
+    }
+  }
+}

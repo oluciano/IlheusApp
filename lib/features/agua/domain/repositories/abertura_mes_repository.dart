@@ -15,4 +15,5 @@ abstract class AberturaMesRepository {
   Future<void> deleteDespesaExtra(String id);
 
   Future<bool> mesSalvo(String mesAno);
+  Future<List<String>> listarTodosMeses();
 }

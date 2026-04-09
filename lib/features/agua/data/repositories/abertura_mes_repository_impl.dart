@@ -123,4 +123,15 @@ class AberturaMesRepositoryImpl implements AberturaMesRepository {
     );
     return result.isNotEmpty;
   }
+
+  @override
+  Future<List<String>> listarTodosMeses() async {
+    final db = dataSource.db;
+    final result = await db.query(
+      'configuracao_mes',
+      columns: ['mes_ano'],
+      orderBy: 'mes_ano DESC',
+    );
+    return result.map((row) => row['mes_ano'] as String).toList();
+  }
 }

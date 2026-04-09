@@ -38,4 +38,6 @@ class WebNotImplemented implements AberturaMesRepository {
   Future<void> deleteDespesaExtra(String id) async {}
   @override
   Future<bool> mesSalvo(String mesAno) async => false;
+  @override
+  Future<List<String>> listarTodosMeses() async => [];
 }

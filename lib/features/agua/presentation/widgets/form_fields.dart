@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class CurrencyInputFormField extends StatelessWidget {
+class CurrencyInputFormField extends StatefulWidget {
   final String label;
   final double? initialValue;
   final ValueChanged<double> onChanged;
@@ -14,15 +14,44 @@ class CurrencyInputFormField extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final controller = TextEditingController(
-      text: initialValue != null ? initialValue!.toStringAsFixed(2) : '',
-    );
+  State<CurrencyInputFormField> createState() => _CurrencyInputFormFieldState();
+}
 
+class _CurrencyInputFormFieldState extends State<CurrencyInputFormField> {
+  late TextEditingController _controller;
+  late FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.initialValue?.toStringAsFixed(2) ?? '',
+    );
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void didUpdateWidget(CurrencyInputFormField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialValue != oldWidget.initialValue && !_focusNode.hasFocus) {
+      _controller.text = widget.initialValue?.toStringAsFixed(2) ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return TextFormField(
-      controller: controller,
+      controller: _controller,
+      focusNode: _focusNode,
       decoration: InputDecoration(
-        label: Text(label),
+        label: Text(widget.label),
         prefixText: 'R\$ ',
         border: const OutlineInputBorder(),
       ),
@@ -34,14 +63,16 @@ class CurrencyInputFormField extends StatelessWidget {
       onChanged: (value) {
         final cleaned = value.replaceAll(RegExp(r'[^0-9.]'), '');
         if (cleaned.isNotEmpty) {
-          onChanged(double.parse(cleaned));
+          widget.onChanged(double.parse(cleaned));
+        } else if (cleaned.isEmpty && value.isEmpty) {
+          widget.onChanged(0);
         }
       },
     );
   }
 }
 
-class IntInputFormField extends StatelessWidget {
+class IntInputFormField extends StatefulWidget {
   final String label;
   final int? initialValue;
   final ValueChanged<int> onChanged;
@@ -54,22 +85,51 @@ class IntInputFormField extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final controller = TextEditingController(
-      text: initialValue?.toString() ?? '',
-    );
+  State<IntInputFormField> createState() => _IntInputFormFieldState();
+}
 
+class _IntInputFormFieldState extends State<IntInputFormField> {
+  late TextEditingController _controller;
+  late FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.initialValue?.toString() ?? '',
+    );
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void didUpdateWidget(IntInputFormField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialValue != oldWidget.initialValue && !_focusNode.hasFocus) {
+      _controller.text = widget.initialValue?.toString() ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return TextFormField(
-      controller: controller,
+      controller: _controller,
+      focusNode: _focusNode,
       decoration: InputDecoration(
-        label: Text(label),
+        label: Text(widget.label),
         border: const OutlineInputBorder(),
       ),
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       onChanged: (value) {
         if (value.isNotEmpty) {
-          onChanged(int.parse(value));
+          widget.onChanged(int.parse(value));
         }
       },
     );

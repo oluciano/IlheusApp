@@ -7,7 +7,7 @@ import 'package:ilheus_app/features/agua/presentation/providers/abertura_mes_for
 import 'package:ilheus_app/features/agua/presentation/providers/database_providers.dart';
 
 final aberturaMesFormProvider =
-    StateNotifierProvider<AberturaMesNotifier, AberturaMesFormState>((ref) {
+    StateNotifierProvider.autoDispose<AberturaMesNotifier, AberturaMesFormState>((ref) {
   final repo = ref.watch(aberturaMesRepositoryProvider);
   final repository = repo ?? WebNotImplemented();
   return AberturaMesNotifier(repository);
@@ -86,5 +86,9 @@ class AberturaMesNotifier extends StateNotifier<AberturaMesFormState> {
     } catch (_) {
       return false;
     }
+  }
+
+  void reset() {
+    state = const AberturaMesFormState();
   }
 }

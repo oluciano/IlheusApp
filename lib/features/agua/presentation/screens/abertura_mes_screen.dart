@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:ilheus_app/features/agua/domain/models/models.dart';
 import 'package:ilheus_app/features/agua/presentation/providers/providers.dart';
+import 'package:ilheus_app/features/agua/presentation/screens/home_screen.dart';
 import 'package:ilheus_app/features/agua/presentation/widgets/form_fields.dart';
 import 'package:ilheus_app/features/agua/presentation/widgets/month_year_picker.dart';
 
@@ -13,31 +15,51 @@ class AberturaMesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final formState = ref.watch(aberturaMesFormProvider);
+    final temMesSelecionado = formState.mesAno != null;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Abertura de Mês'),
-        actions: [
-          if (formState.mesAno != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Center(
-                child: Chip(label: Text(formState.mesAno!)),
+    return PopScope(
+      canPop: !temMesSelecionado,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        ref.read(aberturaMesFormProvider.notifier).reset();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: temMesSelecionado
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    ref.read(aberturaMesFormProvider.notifier).reset();
+                    ref.invalidate(mesesSalvosProvider);
+                    context.go('/home');
+                  },
+                )
+              : null,
+          title: temMesSelecionado
+              ? Text('Abertura do Mês ${formState.mesAno}')
+              : const Text('Abertura de Mês'),
+          actions: [
+            if (temMesSelecionado)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Center(
+                  child: Chip(label: Text(formState.mesAno!)),
+                ),
               ),
+          ],
+        ),
+        body: Column(
+          children: [
+            if (kIsWeb) _webBanner(context),
+            Expanded(
+              child: !temMesSelecionado
+                  ? _buildMesSelecionador(context, ref)
+                  : formState.isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _buildFormulario(context, ref, formState),
             ),
-        ],
-      ),
-      body: Column(
-        children: [
-          if (kIsWeb) _webBanner(context),
-          Expanded(
-            child: formState.mesAno == null
-                ? _buildMesSelecionador(context, ref)
-                : formState.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _buildFormulario(context, ref, formState),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -78,8 +100,7 @@ class AberturaMesScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: () async {
-                final mesAno =
-                    await MonthYearPickerSheet.show(context);
+                final mesAno = await MonthYearPickerSheet.show(context);
                 if (mesAno != null && context.mounted) {
                   ref
                       .read(aberturaMesFormProvider.notifier)
@@ -139,7 +160,9 @@ class AberturaMesScreen extends ConsumerWidget {
                     label: 'Leitura Anterior (m³)',
                     initialValue: conta.leituraAnteriorM3,
                     onChanged: (v) {
-                      ref.read(aberturaMesFormProvider.notifier).atualizarContaCorsan(
+                      ref
+                          .read(aberturaMesFormProvider.notifier)
+                          .atualizarContaCorsan(
                             conta.copyWith(leituraAnteriorM3: v),
                           );
                     },
@@ -151,7 +174,9 @@ class AberturaMesScreen extends ConsumerWidget {
                     label: 'Leitura Atual (m³)',
                     initialValue: conta.leituraAtualM3,
                     onChanged: (v) {
-                      ref.read(aberturaMesFormProvider.notifier).atualizarContaCorsan(
+                      ref
+                          .read(aberturaMesFormProvider.notifier)
+                          .atualizarContaCorsan(
                             conta.copyWith(leituraAtualM3: v),
                           );
                     },
@@ -165,7 +190,9 @@ class AberturaMesScreen extends ConsumerWidget {
               initialValue: conta.valorAgua.toDouble(),
               onChanged: (v) {
                 ref.read(aberturaMesFormProvider.notifier).atualizarContaCorsan(
-                      conta.copyWith(valorAgua: ValorMonetario.fromDouble(v)),
+                      conta.copyWith(
+                        valorAgua: ValorMonetario.fromDouble(v),
+                      ),
                     );
               },
             ),
@@ -175,7 +202,9 @@ class AberturaMesScreen extends ConsumerWidget {
               initialValue: conta.valorEsgoto.toDouble(),
               onChanged: (v) {
                 ref.read(aberturaMesFormProvider.notifier).atualizarContaCorsan(
-                      conta.copyWith(valorEsgoto: ValorMonetario.fromDouble(v)),
+                      conta.copyWith(
+                        valorEsgoto: ValorMonetario.fromDouble(v),
+                      ),
                     );
               },
             ),
@@ -186,7 +215,8 @@ class AberturaMesScreen extends ConsumerWidget {
               onChanged: (v) {
                 ref.read(aberturaMesFormProvider.notifier).atualizarContaCorsan(
                       conta.copyWith(
-                          valorServicoBasico: ValorMonetario.fromDouble(v)),
+                        valorServicoBasico: ValorMonetario.fromDouble(v),
+                      ),
                     );
               },
             ),
@@ -197,9 +227,10 @@ class AberturaMesScreen extends ConsumerWidget {
               onChanged: (v) {
                 ref.read(aberturaMesFormProvider.notifier).atualizarContaCorsan(
                       conta.copyWith(
-                          valorJuros: v > 0
-                              ? ValorMonetario.fromDouble(v)
-                              : null),
+                        valorJuros: v > 0
+                            ? ValorMonetario.fromDouble(v)
+                            : null,
+                      ),
                     );
               },
             ),
@@ -225,7 +256,9 @@ class AberturaMesScreen extends ConsumerWidget {
               initialValue: conta.valorTotal.toDouble(),
               onChanged: (v) {
                 ref.read(aberturaMesFormProvider.notifier).atualizarContaLuz(
-                      conta.copyWith(valorTotal: ValorMonetario.fromDouble(v)),
+                      conta.copyWith(
+                        valorTotal: ValorMonetario.fromDouble(v),
+                      ),
                     );
               },
             ),
@@ -236,9 +269,10 @@ class AberturaMesScreen extends ConsumerWidget {
               onChanged: (v) {
                 ref.read(aberturaMesFormProvider.notifier).atualizarContaLuz(
                       conta.copyWith(
-                          valorJuros: v > 0
-                              ? ValorMonetario.fromDouble(v)
-                              : null),
+                        valorJuros: v > 0
+                            ? ValorMonetario.fromDouble(v)
+                            : null,
+                      ),
                     );
               },
             ),
@@ -263,8 +297,12 @@ class AberturaMesScreen extends ConsumerWidget {
               label: 'Valor do Condomínio',
               initialValue: config.valorCond.toDouble(),
               onChanged: (v) {
-                ref.read(aberturaMesFormProvider.notifier).atualizarConfiguracaoMes(
-                      config.copyWith(valorCond: ValorMonetario.fromDouble(v)),
+                ref
+                    .read(aberturaMesFormProvider.notifier)
+                    .atualizarConfiguracaoMes(
+                      config.copyWith(
+                        valorCond: ValorMonetario.fromDouble(v),
+                      ),
                     );
               },
             ),
@@ -357,11 +395,13 @@ class AberturaMesScreen extends ConsumerWidget {
                 if (descricao.isNotEmpty && valor != null && valor! > 0) {
                   ref
                       .read(aberturaMesFormProvider.notifier)
-                      .adicionarDespesaExtra(DespesaExtra(
-                        mesAno: mesAno,
-                        descricao: descricao,
-                        valorTotal: ValorMonetario.fromDouble(valor!),
-                      ));
+                      .adicionarDespesaExtra(
+                        DespesaExtra(
+                          mesAno: mesAno,
+                          descricao: descricao,
+                          valorTotal: ValorMonetario.fromDouble(valor!),
+                        ),
+                      );
                   Navigator.pop(context);
                 }
               },
@@ -385,14 +425,19 @@ class AberturaMesScreen extends ConsumerWidget {
           onPressed: () async {
             final sucesso =
                 await ref.read(aberturaMesFormProvider.notifier).salvar();
-            if (context.mounted) {
+            if (!context.mounted) return;
+
+            if (sucesso) {
+              ref.invalidate(mesesSalvosProvider);
+              ref.read(aberturaMesFormProvider.notifier).reset();
+              if (context.mounted) {
+                context.go('/home');
+              }
+            } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    sucesso ? 'Mês salvo com sucesso!' : 'Erro ao salvar mês.',
-                  ),
-                  backgroundColor:
-                      sucesso ? Colors.green : Colors.red,
+                const SnackBar(
+                  content: Text('Erro ao salvar mês.'),
+                  backgroundColor: Colors.red,
                 ),
               );
             }
@@ -402,11 +447,7 @@ class AberturaMesScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         OutlinedButton.icon(
-          onPressed: state.isSalvo
-              ? () {
-                  // Navegar para tela de lançamentos de leituras
-                }
-              : null,
+          onPressed: state.isSalvo ? () {} : null,
           icon: const Icon(Icons.fact_check),
           label: const Text('Lançar Leituras'),
         ),
