@@ -1,0 +1,4 @@
+enum ModeloJuros {
+  igualitario,
+  proporcionalDias,
+}

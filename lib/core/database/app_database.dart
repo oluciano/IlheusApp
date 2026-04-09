@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 import 'package:ilheus_app/core/constants/app_constants.dart';
+import 'package:ilheus_app/features/agua/data/datasources/abertura_mes_datasource.dart';
 
 class AppDatabase {
   AppDatabase._();
@@ -21,17 +22,22 @@ class AppDatabase {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, AppConstants.dbName);
 
-    return openDatabase(
+    final db = await openDatabase(
       path,
       version: AppConstants.dbVersion,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
+
+    // Criar tabelas do módulo água
+    final dataSource = AberturaMesDataSource(db);
+    await dataSource.createTables();
+
+    return db;
   }
 
   Future<void> _onCreate(Database db, int version) async {
-    // Tabelas serão criadas pelos módulos individuais
-    // agua/, avisos/, reservas/
+    // Tabelas criadas pelo dataSource do módulo água
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
