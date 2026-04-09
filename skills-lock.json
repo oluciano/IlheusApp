@@ -15,6 +15,11 @@
       "source": "aj-geddes/useful-ai-prompts",
       "sourceType": "github",
       "computedHash": "898d4edc2f8e5f0ec0b2857b8845dbc58c69ab0bb41508161e798e358b60328a"
+    },
+    "sqlite-db": {
+      "source": "bfollington/terma",
+      "sourceType": "github",
+      "computedHash": "ab5c66d202a405d5f71f530a8c490fa4f5a390d005b7abdcc5c9c04baafadebf"
     }
   }
 }
