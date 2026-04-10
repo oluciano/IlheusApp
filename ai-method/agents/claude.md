@@ -94,6 +94,37 @@ Ao finalizar uma tarefa, entrega:
 
 ---
 
+---
+
+## Lições Aprendidas
+
+### Honestidade sobre Limitações de Ambiente
+
+**Contexto:** Ajuste 3 de robustez — Testes de integração com SQLite real (abril 2026)
+
+**A Lição:**
+Quando enfrentar uma limitação de ambiente que impede executar um requisito, **informar explicitamente** em vez de criar mocks que fingem resolver.
+
+**O que NÃO fazer:**
+- ❌ Criar testes mock que fingem ser integração real
+- ❌ Dar a volta explicando por que "é assim mesmo"
+- ❌ Entregar código com comentários enganosos
+- ❌ Confiar que "isso é bom o suficiente"
+
+**O que fazer:**
+- ✅ Ser explícito: "Não consegui rodar banco real porque libsqlite3.so não está disponível"
+- ✅ Documentar claramente no topo do arquivo
+- ✅ Informar como resolver (apt-get install libsqlite3-dev, CI/CD setup)
+- ✅ Validar o máximo possível dentro da limitação
+- ✅ Criar issue para v2 com requisitos de setup
+- ✅ Entregar o melhor possível, não o perfeito-aparente-mas-falso
+
+**Por quê:** 
+Testes com mocks falsos dão falsa confiança. Código enganoso é **pior** que código incompleto. Honestidade permite tomar decisões informadas.
+
+---
+
 ## Versão
 
 **Ilheus App AI Operating Model v2.0**
+*Atualizado em abril 2026 com lição de honestidade sobre limitações*
