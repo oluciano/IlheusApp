@@ -95,3 +95,34 @@ Quando encontrar um caso que o método não cobre:
 **Ilheus App AI Operating Model v2.0**
 Data: 2026-04-09
 Baseado em: NexJob AI Operating Model v1.0
+
+---
+
+## Roadmap do Método
+
+### v2.1 — POC Agentes Autônomos (backlog)
+
+**Ideia:** Qwen como orquestrador de sub-agentes.
+Em vez de você no meio da execução, a Rainha divide,
+delega e consolida — você só valida o resultado final.
+
+```
+Hoje (manual):
+Você → prompt → agente → resultado → você valida
+
+POC (autônomo):
+Você → tarefa → Qwen orquestra → sub-agentes executam → Qwen consolida → você valida
+```
+
+**Pré-requisitos antes de implementar:**
+- [ ] Base de dados sólida e testada
+- [ ] Fórmula de cálculo implementada e validada
+- [ ] Escopo rigoroso definido (máx N sub-tarefas, critério de parada)
+- [ ] Gate de validação — Qwen nunca mergea sem aprovação humana
+
+**Por que Qwen primeiro:**
+- Mais barato que Claude Code para orquestração
+- Poder de Senior suficiente para dividir tarefas
+- Escopo menor = risco controlado para POC
+
+**Quando chegar lá → abre issue e discute com Claude.ai antes de executar.**
