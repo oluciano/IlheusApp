@@ -174,11 +174,11 @@ inadimplente → Debito (alerta no mês seguinte, nunca somado)
 
 ---
 
-## Dúvidas em Aberto (Confirmar com Administrador)
+## Decisões Confirmadas
 
-- **Taxa R$ 3,79 / R$ 9,84** — é Serviço Básico CORSAN/22 ou taxa administrativa interna?
-- **Esgoto casa fechada** — paga igualitário mesmo sem consumo?
-- **Quando muda para PROPORCIONAL_DIAS** — administrador configura ou é automático?
+- **Taxa desconhecida (R$ 3,79 / R$ 9,84)** — origem ainda não confirmada. Componente existe no sistema mas **desativado por default**. Administrador ativa quando souber o que é.
+- **Esgoto casa fechada** — ✅ paga igualitário mesmo sem consumo. Casa vazia não isenta do esgoto.
+- **Modelo PROPORCIONAL_DIAS** — ✅ administrador configura quando quiser migrar. Flag em `ConfiguracaoMes`.
 
 ---
 

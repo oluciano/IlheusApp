@@ -3,23 +3,8 @@
 **Carregue junto com o minimal apenas para tarefas complexas.**
 **Tarefas simples: minimal é suficiente.**
 
----
-
-## Arquitetura de Camadas
-
-```
-UI (Flutter Widgets)
-    ↓
-ViewModel (state + lógica de apresentação)
-    ↓
-UseCase (regra de negócio pura, sem Flutter)
-    ↓
-Repository (interface — nunca implementação concreta)
-    ↓
-DataSource (SQLite via sqflite)
-```
-
-**Regra:** UseCase nunca importa Flutter. ViewModel nunca acessa DataSource diretamente.
+> **Arquitetura de camadas e stack decisions → nas skills @flutter e @flutter-architecting-apps**
+> Este arquivo contém apenas regras de domínio do Ilheus App.
 
 ---
 
@@ -74,18 +59,6 @@ reservas/     → reserva do quiosque (futuro)
 - Registra pagamentos
 - Gera PDF mensal (substituto do panfleto manuscrito)
 - Vê histórico completo de débitos por casa
-
----
-
-## Decisões Arquiteturais Registradas
-
-| Decisão | Escolha | Motivo |
-|---------|---------|--------|
-| Banco | SQLite (sqflite) | Offline-first, sem servidor na v1 |
-| Estado | Riverpod | Mais explícito que Provider, testável |
-| PDF | pdf package | Sem dependência externa |
-| Navigation | GoRouter | Rotas tipadas, suporte deep link futuro |
-| Backend | Nenhum na v1 | Validação com administrador primeiro |
 
 ---
 
