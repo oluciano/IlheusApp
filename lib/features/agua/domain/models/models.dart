@@ -15,3 +15,5 @@ export 'cobranca.dart';
 export 'pagamento.dart';
 export 'debito.dart';
 export 'auditoria_fatura.dart';
+export 'erro_fechamento.dart';
+export 'resultado_fechamento.dart';

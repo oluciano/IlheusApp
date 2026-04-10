@@ -69,4 +69,37 @@ class CobrancaRepositoryImpl implements CobrancaRepository {
       whereArgs: [cobrancaId],
     );
   }
+
+  @override
+  Future<int> buscarInadimplentesAnterior(String mesAtual) async {
+    final db = dataSource.db;
+
+    // Calcula o mês anterior (YYYY-MM)
+    final partes = mesAtual.split('-');
+    int ano = int.parse(partes[0]);
+    int mes = int.parse(partes[1]);
+
+    if (mes == 1) {
+      mes = 12;
+      ano--;
+    } else {
+      mes--;
+    }
+
+    final mesAnterior = '$ano-${mes.toString().padLeft(2, '0')}';
+
+    // Conta quantas casas ficaram inadimplentes no mês anterior
+    final result = await db.rawQuery(
+      '''
+      SELECT COUNT(*) as total
+      FROM cobrancas c
+      INNER JOIN fatura_calculada f ON f.id = c.fatura_id
+      WHERE f.mes_ano = ? AND c.status = ?
+      ''',
+      [mesAnterior, StatusCobranca.inadimplente.name],
+    );
+
+    if (result.isEmpty) return 0;
+    return result.first['total'] as int? ?? 0;
+  }
 }
