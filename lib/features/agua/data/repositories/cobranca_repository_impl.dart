@@ -18,6 +18,9 @@ class CobrancaRepositoryImpl implements CobrancaRepository {
 
   @override
   Future<void> salvarCobranca(Cobranca cobranca) async {
+    if (cobranca.faturaId.isEmpty) {
+      throw ArgumentError('Cobranca deve ter faturaId válido');
+    }
     final db = dataSource.db;
     final entity = cobranca.id.isNotEmpty
         ? cobranca
@@ -101,5 +104,48 @@ class CobrancaRepositoryImpl implements CobrancaRepository {
 
     if (result.isEmpty) return 0;
     return result.first['total'] as int? ?? 0;
+  }
+
+  @override
+  Future<void> marcarInadimplentesPorVencimento(String mesAtual) async {
+    final db = dataSource.db;
+
+    // Calcula o mês anterior (YYYY-MM)
+    final partes = mesAtual.split('-');
+    int ano = int.parse(partes[0]);
+    int mes = int.parse(partes[1]);
+
+    if (mes == 1) {
+      mes = 12;
+      ano--;
+    } else {
+      mes--;
+    }
+
+    final mesAnterior = '$ano-${mes.toString().padLeft(2, '0')}';
+
+    // Marca como inadimplente todas as cobranças do mês anterior que:
+    // 1. Estão com status pendente
+    // 2. Têm vencimento < hoje (usando DATE para comparar apenas datas, sem hora)
+    // O vencimento real está em conta_corsan.vencimento do mesmo mês anterior
+    await db.rawUpdate(
+      '''
+      UPDATE cobrancas
+      SET status = ?
+      WHERE id IN (
+        SELECT c.id FROM cobrancas c
+        INNER JOIN fatura_calculada f ON f.id = c.fatura_id
+        INNER JOIN conta_corsan cc ON cc.mes_ano = f.mes_ano
+        WHERE f.mes_ano = ?
+          AND c.status = ?
+          AND DATE(cc.vencimento) < DATE('now')
+      )
+      ''',
+      [
+        StatusCobranca.inadimplente.name,
+        mesAnterior,
+        StatusCobranca.pendente.name,
+      ],
+    );
   }
 }

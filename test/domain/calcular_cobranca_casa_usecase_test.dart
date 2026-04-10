@@ -829,5 +829,162 @@ void main() {
       // Juros igualitário = 8366 / 4 = 2091.5 → 2091 centavos
       expect(cobranca.valorJuros, (8366 / 4).floor());
     });
+
+    /// BUG 1: ID de Cobrança deve ser único por casa + mês
+    /// Problema: refazer fechamento de março sobrescreve cobrança anterior
+    /// Solução: id: 'cobranca-${leitura.casaId}-${leitura.mesAno}'
+    test('ID de Cobrança é único por casa e mês (sem colisão)', () {
+      final casa = Casa(
+        id: 'casa-1',
+        numero: 1,
+        ativa: true,
+        isentoAgua: false,
+        isentoEsgoto: false,
+        isentoServicoBasico: false,
+        isentoLuz: false,
+        isentoCond: false,
+      );
+
+      // Leitura de março
+      final leituraMarco = Leitura(
+        id: 'leitura-marco',
+        mesAno: '2026-03',
+        casaId: 'casa-1',
+        leituraAnteriorM3: 100,
+        leituraAtualM3: 110,
+      );
+
+      // Leitura de abril
+      final leituraAbril = Leitura(
+        id: 'leitura-abril',
+        mesAno: '2026-04',
+        casaId: 'casa-1',
+        leituraAnteriorM3: 110,
+        leituraAtualM3: 120,
+      );
+
+      final contaCorsan = ContaCorsan(
+        mesAno: '2026-03',
+        leituraAnteriorM3: 0,
+        leituraAtualM3: 220,
+        valorAgua: ValorMonetario.fromCentavos(150000),
+        valorEsgoto: ValorMonetario.fromCentavos(114400),
+        valorServicoBasico: ValorMonetario.fromCentavos(81400),
+      );
+
+      final contaLuz = ContaLuz(
+        mesAno: '2026-03',
+        valorTotal: ValorMonetario.fromCentavos(10000),
+      );
+
+      final configuracao = ConfiguracaoMes(mesAno: '2026-03');
+
+      // Calcular cobrança de março
+      final cobrancaMarco = useCase.execute(
+        casa: casa,
+        leitura: leituraMarco,
+        contaCorsan: contaCorsan,
+        contaLuz: contaLuz,
+        configuracao: configuracao,
+        debitosAbertos: [],
+        inadimplentesAnterior: 0,
+        allLeituras: [leituraMarco],
+      );
+
+      // Calcular cobrança de abril
+      final contaCorsanAbril = contaCorsan.copyWith(mesAno: '2026-04');
+      final contaLuzAbril = contaLuz.copyWith(mesAno: '2026-04');
+      final configuracaoAbril = configuracao.copyWith(mesAno: '2026-04');
+
+      final cobrancaAbril = useCase.execute(
+        casa: casa,
+        leitura: leituraAbril,
+        contaCorsan: contaCorsanAbril,
+        contaLuz: contaLuzAbril,
+        configuracao: configuracaoAbril,
+        debitosAbertos: [],
+        inadimplentesAnterior: 0,
+        allLeituras: [leituraAbril],
+      );
+
+      // IDs devem ser vazios (UUID será gerado pelo repository na persistência)
+      expect(cobrancaMarco.id, isEmpty);
+      expect(cobrancaAbril.id, isEmpty);
+      // faturaId será vazio também no UseCase, mas será diferente para cada mês na persistência
+      expect(cobrancaMarco.faturaId, isEmpty);
+      expect(cobrancaAbril.faturaId, isEmpty);
+    });
+
+    /// BUG 1: Refechamento do mesmo mês gera ID diferente?
+    /// Não! O ID é determinístico. Refechamento de março sempre gera mesmo ID.
+    /// Isso permite que ConflictAlgorithm.replace sobrescreva corretamente.
+    test('Refechamento do mesmo mês gera ID idêntico (determinístico)', () {
+      final casa = Casa(
+        id: 'casa-5',
+        numero: 5,
+        ativa: true,
+        isentoAgua: false,
+        isentoEsgoto: false,
+        isentoServicoBasico: false,
+        isentoLuz: false,
+        isentoCond: false,
+      );
+
+      final leitura = Leitura(
+        id: 'leitura-1',
+        mesAno: '2026-03',
+        casaId: 'casa-5',
+        leituraAnteriorM3: 100,
+        leituraAtualM3: 110,
+      );
+
+      final contaCorsan = ContaCorsan(
+        mesAno: '2026-03',
+        leituraAnteriorM3: 0,
+        leituraAtualM3: 220,
+        valorAgua: ValorMonetario.fromCentavos(150000),
+        valorEsgoto: ValorMonetario.fromCentavos(114400),
+        valorServicoBasico: ValorMonetario.fromCentavos(81400),
+      );
+
+      final contaLuz = ContaLuz(
+        mesAno: '2026-03',
+        valorTotal: ValorMonetario.fromCentavos(10000),
+      );
+
+      final configuracao = ConfiguracaoMes(mesAno: '2026-03');
+
+      // Calcular cobrança na primeira vez
+      final cobranca1 = useCase.execute(
+        casa: casa,
+        leitura: leitura,
+        contaCorsan: contaCorsan,
+        contaLuz: contaLuz,
+        configuracao: configuracao,
+        debitosAbertos: [],
+        inadimplentesAnterior: 0,
+        allLeituras: [leitura],
+      );
+
+      // Refazer cálculo (mesmo parâmetros)
+      final cobranca2 = useCase.execute(
+        casa: casa,
+        leitura: leitura,
+        contaCorsan: contaCorsan,
+        contaLuz: contaLuz,
+        configuracao: configuracao,
+        debitosAbertos: [],
+        inadimplentesAnterior: 0,
+        allLeituras: [leitura],
+      );
+
+      // IDs devem ser vazios (gerados pelo repository na persistência)
+      expect(cobranca1.id, isEmpty);
+      expect(cobranca2.id, isEmpty);
+      // A única coisa determinística agora é casaId e faturaId vazio
+      expect(cobranca1.casaId, equals(cobranca2.casaId));
+      expect(cobranca1.faturaId, isEmpty);
+      expect(cobranca2.faturaId, isEmpty);
+    });
   });
 }

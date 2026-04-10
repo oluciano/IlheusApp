@@ -16,4 +16,11 @@ abstract class AberturaMesRepository {
 
   Future<bool> mesSalvo(String mesAno);
   Future<List<String>> listarTodosMeses();
+
+  /// Executa um bloco de código dentro de uma transação SQLite.
+  ///
+  /// Se o [body] completar com sucesso, a transação é confirmada.
+  /// Se o [body] lançar uma exceção, a transação é desfeita automaticamente.
+  /// O resultado do [body] é retornado.
+  Future<T> runInTransaction<T>(Future<T> Function() body);
 }

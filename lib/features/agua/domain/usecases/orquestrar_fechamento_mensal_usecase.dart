@@ -87,7 +87,7 @@ class OrquestrarFechamentoMensalUseCase {
     required this.fecharFaturaUseCase,
   });
 
-  /// Executa o fechamento mensal completo.
+  /// Executa o fechamento mensal completo dentro de uma transação SQLite.
   ///
   /// Parâmetros:
   /// - [mesAno]: Mês no formato 'YYYY-MM' (ex: '2026-04')
@@ -97,124 +97,137 @@ class OrquestrarFechamentoMensalUseCase {
   /// Retorna: ResultadoFechamento com fatura, cobrancas, auditoria e alertas.
   ///
   /// Lança FechamentoMensalException se alguma validação falhar.
+  ///
+  /// Se uma exceção ocorrer durante o fechamento, toda a transação é desfeita
+  /// (rollback automático) garantindo consistência.
   Future<ResultadoFechamento> execute({
     required String mesAno,
     required FaturaCalculada faturaRascunho,
     required ConfiguracaoMes configuracao,
   }) async {
-    // PASSO 1: Validar pré-condições
-    final casasAtivas = await casaRepository.buscarAtivas();
-    if (casasAtivas.length < numCasasEsperado) {
-      throw FechamentoMensalException(
-        erro: ErroFechamento.casasInsuficientes,
-        mensagem: 'Apenas ${casasAtivas.length} casas ativas. '
-            'Esperadas $numCasasEsperado.',
+    return aberturaMesRepository.runInTransaction<ResultadoFechamento>(() async {
+      // PASSO 1: Validar pré-condições
+      final casasAtivas = await casaRepository.buscarAtivas();
+      if (casasAtivas.length < numCasasEsperado) {
+        throw FechamentoMensalException(
+          erro: ErroFechamento.casasInsuficientes,
+          mensagem: 'Apenas ${casasAtivas.length} casas ativas. '
+              'Esperadas $numCasasEsperado.',
+        );
+      }
+
+      final contaCorsan = await aberturaMesRepository.getContaCorsan(mesAno);
+      if (contaCorsan == null) {
+        throw FechamentoMensalException(
+          erro: ErroFechamento.contaCorsanAusente,
+          mensagem: 'ContaCORSAN não encontrada para o mês $mesAno.',
+        );
+      }
+
+      final contaLuz = await aberturaMesRepository.getContaLuz(mesAno);
+      if (contaLuz == null) {
+        throw FechamentoMensalException(
+          erro: ErroFechamento.contaLuzAusente,
+          mensagem: 'ContaLuz não encontrada para o mês $mesAno.',
+        );
+      }
+
+      final leituraCompleta = await leituraRepository.verificarLeituraCompleta(
+        mesAno,
       );
-    }
-
-    final contaCorsan = await aberturaMesRepository.getContaCorsan(mesAno);
-    if (contaCorsan == null) {
-      throw FechamentoMensalException(
-        erro: ErroFechamento.contaCorsanAusente,
-        mensagem: 'ContaCORSAN não encontrada para o mês $mesAno.',
-      );
-    }
-
-    final contaLuz = await aberturaMesRepository.getContaLuz(mesAno);
-    if (contaLuz == null) {
-      throw FechamentoMensalException(
-        erro: ErroFechamento.contaLuzAusente,
-        mensagem: 'ContaLuz não encontrada para o mês $mesAno.',
-      );
-    }
-
-    final leituraCompleta = await leituraRepository.verificarLeituraCompleta(
-      mesAno,
-    );
-    if (!leituraCompleta) {
-      throw FechamentoMensalException(
-        erro: ErroFechamento.leiturasIncompletas,
-        mensagem: 'Uma ou mais casas não têm leitura registrada no mês $mesAno.',
-      );
-    }
-
-    // PASSO 2: Calcular cobrança de cada casa
-    final leituras = await leituraRepository.buscarLeiturasPorMes(mesAno);
-    final evento = await eventoQuiosqueRepository.buscarPorMes(mesAno);
-    final inadimplentesAnterior = await cobrancaRepository
-        .buscarInadimplentesAnterior(mesAno);
-
-    final cobrancas = <Cobranca>[];
-    for (final casa in casasAtivas) {
-      final leitura = leituras.firstWhere(
-        (l) => l.casaId == casa.id,
-        orElse: () => throw FechamentoMensalException(
+      if (!leituraCompleta) {
+        throw FechamentoMensalException(
           erro: ErroFechamento.leiturasIncompletas,
-          mensagem: 'Leitura não encontrada para casa ${casa.numero}.',
-        ),
-      );
+          mensagem: 'Uma ou mais casas não têm leitura registrada no mês $mesAno.',
+        );
+      }
 
-      final debitosAbertos = await debitoRepository.buscarDebitosAbertos(
-        casa.id,
-      );
+      // PASSO 2: Calcular cobrança de cada casa
+      // Primeiro, marcar como inadimplentes todas as cobranças do mês anterior
+      // que venceram e ainda estão pendentes (vencimento = dia 10 do mês seguinte)
+      await cobrancaRepository.marcarInadimplentesPorVencimento(mesAno);
 
-      final cobranca = calcularCobrancaUseCase.execute(
-        casa: casa,
-        leitura: leitura,
+      final leituras = await leituraRepository.buscarLeiturasPorMes(mesAno);
+      final evento = await eventoQuiosqueRepository.buscarPorMes(mesAno);
+      final inadimplentesAnterior = await cobrancaRepository
+          .buscarInadimplentesAnterior(mesAno);
+
+      final cobrancas = <Cobranca>[];
+      for (final casa in casasAtivas) {
+        final leitura = leituras.firstWhere(
+          (l) => l.casaId == casa.id,
+          orElse: () => throw FechamentoMensalException(
+            erro: ErroFechamento.leiturasIncompletas,
+            mensagem: 'Leitura não encontrada para casa ${casa.numero}.',
+          ),
+        );
+
+        final debitosAbertos = await debitoRepository.buscarDebitosAbertos(
+          casa.id,
+        );
+
+        final cobranca = calcularCobrancaUseCase.execute(
+          casa: casa,
+          leitura: leitura,
+          contaCorsan: contaCorsan,
+          contaLuz: contaLuz,
+          configuracao: configuracao,
+          eventoQuiosque: evento,
+          debitosAbertos: debitosAbertos,
+          inadimplentesAnterior: inadimplentesAnterior,
+          dataPagamento: null,
+          allLeituras: leituras,
+        );
+
+        cobrancas.add(cobranca);
+      }
+
+      // PASSO 3: Fechar fatura
+      final resultadoFechamento = fecharFaturaUseCase.execute(
+        cobrancas: cobrancas,
         contaCorsan: contaCorsan,
         contaLuz: contaLuz,
-        configuracao: configuracao,
-        eventoQuiosque: evento,
-        debitosAbertos: debitosAbertos,
-        inadimplentesAnterior: inadimplentesAnterior,
-        dataPagamento: null,
-        allLeituras: leituras,
+        faturaRascunho: faturaRascunho,
+        leituras: leituras,
       );
 
-      cobrancas.add(cobranca);
-    }
-
-    // PASSO 3: Fechar fatura
-    final resultadoFechamento = fecharFaturaUseCase.execute(
-      cobrancas: cobrancas,
-      contaCorsan: contaCorsan,
-      contaLuz: contaLuz,
-      faturaRascunho: faturaRascunho,
-      leituras: leituras,
-    );
-
-    // Se auditoria falhou com erro, não persiste
-    if (resultadoFechamento.auditoria.status == StatusAuditoria.erro) {
-      throw FechamentoMensalException(
-        erro: ErroFechamento.auditoriaFalhou,
-        mensagem: resultadoFechamento.auditoria.mensagem ??
-            'Auditoria de fatura falhou.',
-      );
-    }
-
-    // PASSO 4: Persistir
-    for (final cobranca in cobrancas) {
-      await cobrancaRepository.salvarCobranca(cobranca);
-    }
-
-    await faturaRepository.atualizarStatus(
-      resultadoFechamento.fatura.id,
-      resultadoFechamento.fatura.status,
-    );
-
-    // Montar resultado final com alertas
-    final alertas = <String>[];
-    if (resultadoFechamento.auditoria.status == StatusAuditoria.alerta) {
-      if (resultadoFechamento.auditoria.mensagem != null) {
-        alertas.add(resultadoFechamento.auditoria.mensagem!);
+      // Se auditoria falhou com erro, não persiste
+      if (resultadoFechamento.auditoria.status == StatusAuditoria.erro) {
+        throw FechamentoMensalException(
+          erro: ErroFechamento.auditoriaFalhou,
+          mensagem: resultadoFechamento.auditoria.mensagem ??
+              'Auditoria de fatura falhou.',
+        );
       }
-    }
 
-    return ResultadoFechamento(
-      fatura: resultadoFechamento.fatura,
-      cobrancas: cobrancas,
-      auditoria: resultadoFechamento.auditoria,
-      alertas: alertas,
-    );
+      // PASSO 4: Persistir
+      // Injetar faturaId real em cada cobrança antes de persistir
+      for (final cobranca in cobrancas) {
+        final cobrancaComFatura = cobranca.copyWith(
+          faturaId: resultadoFechamento.fatura.id,
+        );
+        await cobrancaRepository.salvarCobranca(cobrancaComFatura);
+      }
+
+      await faturaRepository.atualizarStatus(
+        resultadoFechamento.fatura.id,
+        resultadoFechamento.fatura.status,
+      );
+
+      // Montar resultado final com alertas
+      final alertas = <String>[];
+      if (resultadoFechamento.auditoria.status == StatusAuditoria.alerta) {
+        if (resultadoFechamento.auditoria.mensagem != null) {
+          alertas.add(resultadoFechamento.auditoria.mensagem!);
+        }
+      }
+
+      return ResultadoFechamento(
+        fatura: resultadoFechamento.fatura,
+        cobrancas: cobrancas,
+        auditoria: resultadoFechamento.auditoria,
+        alertas: alertas,
+      );
+    });
   }
 }

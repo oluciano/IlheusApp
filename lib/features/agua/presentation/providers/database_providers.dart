@@ -40,4 +40,11 @@ class WebNotImplemented implements AberturaMesRepository {
   Future<bool> mesSalvo(String mesAno) async => false;
   @override
   Future<List<String>> listarTodosMeses() async => [];
+
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() body) async {
+    debugPrint('Transações desabilitadas no web (sqflite não suportado)');
+    // No web, simplesmente executa o body sem transação
+    return body();
+  }
 }

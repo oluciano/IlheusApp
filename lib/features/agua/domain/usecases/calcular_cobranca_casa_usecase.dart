@@ -122,8 +122,8 @@ class CalcularCobrancaCasaUseCase {
         valorDebitos;
 
     return Cobranca(
-      id: 'cobranca-${leitura.casaId}',
-      faturaId: 'fatura-${leitura.mesAno}',
+      id: '',
+      faturaId: '',
       casaId: leitura.casaId,
       valorAgua: valorAgua,
       valorEsgoto: valorEsgoto,

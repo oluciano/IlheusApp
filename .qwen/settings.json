@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(unzip *)",
+      "Bash(diff *)"
     ]
   },
   "$version": 3

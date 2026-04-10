@@ -134,4 +134,10 @@ class AberturaMesRepositoryImpl implements AberturaMesRepository {
     );
     return result.map((row) => row['mes_ano'] as String).toList();
   }
+
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() body) async {
+    final db = dataSource.db;
+    return db.transaction((_) async => await body());
+  }
 }

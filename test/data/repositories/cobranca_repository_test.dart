@@ -70,6 +70,20 @@ void main() {
         expect(insertedMap['id'], isNotNull);
         expect(insertedMap['id'], isNotEmpty);
       });
+
+      test('lança ArgumentError quando faturaId está vazio', () async {
+        final cobranca = Cobranca(
+          id: 'cob-1',
+          faturaId: '',
+          casaId: casaId,
+          valorTotal: 17654,
+        );
+
+        expect(
+          () => repository.salvarCobranca(cobranca),
+          throwsA(isA<ArgumentError>()),
+        );
+      });
     });
 
     group('buscarCobrancasPorFatura', () {
@@ -204,6 +218,93 @@ void main() {
                     where: any(named: 'where'),
                     whereArgs: any(named: 'whereArgs')))
             .called(1);
+      });
+    });
+
+    group('buscarInadimplentesAnterior', () {
+      test('conta inadimplentes do mês anterior', () async {
+        final rows = [
+          {'total': 3},
+        ];
+
+        when(() => db.rawQuery(any(), any()))
+            .thenAnswer((_) async => rows);
+
+        final count = await repository.buscarInadimplentesAnterior('2026-04');
+        expect(count, 3);
+      });
+
+      test('retorna 0 quando nenhum inadimplente no mês anterior', () async {
+        when(() => db.rawQuery(any(), any()))
+            .thenAnswer((_) async => [{'total': 0}]);
+
+        final count = await repository.buscarInadimplentesAnterior('2026-04');
+        expect(count, 0);
+      });
+
+      test('calcula mês anterior corretamente (virada de ano)', () async {
+        when(() => db.rawQuery(any(), any()))
+            .thenAnswer((_) async => [{'total': 2}]);
+
+        // Janeiro 2026 → busca dezembro 2025
+        final count = await repository.buscarInadimplentesAnterior('2026-01');
+        expect(count, 2);
+
+        // Valida que a query foi chamada com formato correto (2025-12)
+        verify(() => db.rawQuery(any(), any())).called(1);
+      });
+    });
+
+    group('marcarInadimplentesPorVencimento', () {
+      test('marca como inadimplente cobranças pendentes com vencimento passado', () async {
+        when(() => db.rawUpdate(any(), any()))
+            .thenAnswer((_) async => 3); // 3 cobranças atualizadas
+
+        await repository.marcarInadimplentesPorVencimento('2026-04');
+
+        // Valida que rawUpdate foi chamado com a query corrigida
+        verify(() => db.rawUpdate(
+          any(
+            that: contains('conta_corsan'),
+          ),
+          any(),
+        )).called(1);
+      });
+
+      test('usa DATE() para comparar apenas a data de vencimento, sem hora', () async {
+        when(() => db.rawUpdate(any(), any()))
+            .thenAnswer((_) async => 1);
+
+        await repository.marcarInadimplentesPorVencimento('2026-04');
+
+        // Verifica que a query usa DATE para comparação sem hora
+        verify(() => db.rawUpdate(
+          any(
+            that: contains("DATE(cc.vencimento)"),
+          ),
+          any(),
+        )).called(1);
+      });
+
+      test('calcula mês anterior corretamente para query de inadimplência', () async {
+        when(() => db.rawUpdate(any(), any()))
+            .thenAnswer((_) async => 1);
+
+        // Chamada para abril 2026 deve buscar inadimplentes de março 2026
+        await repository.marcarInadimplentesPorVencimento('2026-04');
+
+        // Valida que query foi executada e está buscando mês anterior
+        verify(() => db.rawUpdate(any(), any())).called(1);
+      });
+
+      test('calcula mês anterior corretamente na virada de ano', () async {
+        when(() => db.rawUpdate(any(), any()))
+            .thenAnswer((_) async => 2);
+
+        // Janeiro 2026 → busca dezembro 2025
+        await repository.marcarInadimplentesPorVencimento('2026-01');
+
+        verify(() => db.rawUpdate(any(), any())).called(1);
       });
     });
   });

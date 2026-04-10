@@ -7,4 +7,5 @@ abstract class CobrancaRepository {
   Future<Cobranca?> buscarCobrancaCasa(String casaId, String mesAno);
   Future<void> atualizarStatus(String cobrancaId, StatusCobranca status);
   Future<int> buscarInadimplentesAnterior(String mesAtual);
+  Future<void> marcarInadimplentesPorVencimento(String mesAtual);
 }
