@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 
 import 'package:ilheus_app/core/constants/app_constants.dart';
 import 'package:ilheus_app/features/agua/data/datasources/abertura_mes_datasource.dart';
+import 'package:ilheus_app/features/agua/data/datasources/database_seed.dart';
 
 class AppDatabase {
   AppDatabase._();
@@ -29,19 +30,26 @@ class AppDatabase {
       onUpgrade: _onUpgrade,
     );
 
-    // Criar tabelas do módulo água
-    final dataSource = AberturaMesDataSource(db);
-    await dataSource.createTables();
+    // Garantir seed inicial
+    await DatabaseSeed.seedIfEmpty(db);
 
     return db;
   }
 
   Future<void> _onCreate(Database db, int version) async {
-    // Tabelas criadas pelo dataSource do módulo água
+    final dataSource = AberturaMesDataSource(db);
+    await dataSource.createTables();
   }
 
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Migrations serão gerenciadas por módulo
+  Future<void> _onUpgrade(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    if (oldVersion < 2) {
+      final dataSource = AberturaMesDataSource(db);
+      await dataSource.upgradeFromV1();
+    }
   }
 
   Future<void> close() async {
