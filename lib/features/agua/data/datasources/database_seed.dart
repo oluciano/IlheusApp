@@ -1,7 +1,12 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
-/// Seed inicial: 22 casas residenciais + 1 quiosque (numero 23).
+/// Seed inicial: 22 casas residenciais + 1 quiiosque (numero 23).
+///
+/// Regras de seed:
+/// - Casa 08 → isento = true (leiturista), ehAdministrador = false
+/// - Casa 02 → isento = false, ehAdministrador = true
+/// - Demais → isento = false, ehAdministrador = false
 class DatabaseSeed {
   static const _uuid = Uuid();
 
@@ -20,15 +25,15 @@ class DatabaseSeed {
 
     // Casas 1-22
     for (var i = 1; i <= 22; i++) {
+      final isento = i == 8; // leiturista
+      final ehAdministrador = i == 2;
+
       batch.insert('casas', {
         'id': _uuid.v4(),
         'numero': i,
         'ativa': 1,
-        'isento_agua': 0,
-        'isento_esgoto': 0,
-        'isento_servico_basico': 0,
-        'isento_luz': 0,
-        'isento_cond': 0,
+        'isento': isento ? 1 : 0,
+        'eh_administrador': ehAdministrador ? 1 : 0,
       });
     }
 
@@ -37,11 +42,8 @@ class DatabaseSeed {
       'id': _uuid.v4(),
       'numero': 23,
       'ativa': 1,
-      'isento_agua': 0,
-      'isento_esgoto': 0,
-      'isento_servico_basico': 0,
-      'isento_luz': 0,
-      'isento_cond': 0,
+      'isento': 0,
+      'eh_administrador': 0,
     });
 
     await batch.commit(noResult: true);

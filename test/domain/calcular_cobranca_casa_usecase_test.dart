@@ -26,11 +26,11 @@ void main() {
         id: 'casa-1',
         numero: 1,
         ativa: true,
-        isentoAgua: false,
-        isentoEsgoto: false,
-        isentoServicoBasico: false,
-        isentoLuz: false,
-        isentoCond: false,
+        
+        
+        
+        
+        
       );
 
       final leitura = Leitura(
@@ -92,25 +92,21 @@ void main() {
               cobranca.valorCond);
     });
 
-    /// Cenário: Casa com isenção parcial (só água isenta)
-    test('Casa com isenção parcial (só água)', () {
+    /// Cenário: Casa isenta — paga SOMENTE condomínio
+    test('Casa isenta paga somente condomínio', () {
       final casa = Casa(
-        id: 'casa-2',
-        numero: 2,
+        id: 'casa-8',
+        numero: 8,
         ativa: true,
-        isentoAgua: true, // ← ISENTO
-        isentoEsgoto: false,
-        isentoServicoBasico: false,
-        isentoLuz: false,
-        isentoCond: false,
+        isento: true,
       );
 
       final leitura = Leitura(
-        id: 'leitura-2',
+        id: 'leitura-8',
         mesAno: '2026-04',
-        casaId: 'casa-2',
+        casaId: 'casa-8',
         leituraAnteriorM3: 100,
-        leituraAtualM3: 115, // 15 m³
+        leituraAtualM3: 115, // 15 m³ (não importa — isento)
       );
 
       final contaCorsan = ContaCorsan(
@@ -144,11 +140,13 @@ void main() {
         allLeituras: [leitura],
       );
 
-      expect(cobranca.valorAgua, 0); // Isento
-      expect(cobranca.valorEsgoto, (114400 / 22).floor());
-      expect(cobranca.valorServicoBasico, (81400 / 22).floor());
-      expect(cobranca.valorLuz, (10000 / 22).floor());
+      // Isento: zera água, esgoto, serv. básico, luz — PAGA condomínio
+      expect(cobranca.valorAgua, 0);
+      expect(cobranca.valorEsgoto, 0);
+      expect(cobranca.valorServicoBasico, 0);
+      expect(cobranca.valorLuz, 0);
       expect(cobranca.valorCond, 15000);
+      expect(cobranca.valorTotal, 15000); // só condomínio
     });
 
     /// Cenário: Casa inativa (consumo zero, paga fixos)
@@ -157,11 +155,11 @@ void main() {
         id: 'casa-3',
         numero: 3,
         ativa: false, // ← INATIVA
-        isentoAgua: false,
-        isentoEsgoto: false,
-        isentoServicoBasico: false,
-        isentoLuz: false,
-        isentoCond: false,
+        
+        
+        
+        
+        
       );
 
       final leitura = Leitura(
@@ -217,11 +215,11 @@ void main() {
         id: 'casa-4',
         numero: 4,
         ativa: true,
-        isentoAgua: false,
-        isentoEsgoto: false,
-        isentoServicoBasico: false,
-        isentoLuz: false,
-        isentoCond: false,
+        
+        
+        
+        
+        
       );
 
       final leitura = Leitura(
@@ -281,11 +279,11 @@ void main() {
         id: 'casa-5',
         numero: 5,
         ativa: true,
-        isentoAgua: false,
-        isentoEsgoto: false,
-        isentoServicoBasico: false,
-        isentoLuz: false,
-        isentoCond: false,
+        
+        
+        
+        
+        
       );
 
       final leitura1 = Leitura(
@@ -345,11 +343,11 @@ void main() {
         id: 'casa-7',
         numero: 7,
         ativa: true,
-        isentoAgua: false,
-        isentoEsgoto: false,
-        isentoServicoBasico: false,
-        isentoLuz: false,
-        isentoCond: false,
+        
+        
+        
+        
+        
       );
 
       final leitura = Leitura(
@@ -403,11 +401,11 @@ void main() {
         id: 'casa-8',
         numero: 8,
         ativa: true,
-        isentoAgua: false,
-        isentoEsgoto: false,
-        isentoServicoBasico: false,
-        isentoLuz: false,
-        isentoCond: false,
+        
+        
+        
+        
+        
       );
 
       final leitura = Leitura(
@@ -459,11 +457,11 @@ void main() {
         id: 'casa-9',
         numero: 9,
         ativa: true,
-        isentoAgua: false,
-        isentoEsgoto: false,
-        isentoServicoBasico: false,
-        isentoLuz: false,
-        isentoCond: false,
+        
+        
+        
+        
+        
       );
 
       final leitura = Leitura(
@@ -515,14 +513,16 @@ void main() {
         allLeituras: [leitura],
       );
 
-      expect(cobranca.valorDebitos, 50000); // Débito anterior somado
+      // Débito aparece separado — NUNCA somado ao valorTotal
+      expect(cobranca.valorDebitos, 50000);
       expect(cobranca.valorTotal,
           cobranca.valorAgua +
               cobranca.valorEsgoto +
               cobranca.valorServicoBasico +
               cobranca.valorLuz +
               cobranca.valorCond +
-              cobranca.valorDebitos);
+              cobranca.valorJuros +
+              cobranca.valorQuiosque);
     });
 
     /// Cenário: Juros PROPORCIONAL_DIAS com múltiplos inadimplentes
@@ -539,11 +539,11 @@ void main() {
         id: 'casa-10',
         numero: 10,
         ativa: true,
-        isentoAgua: false,
-        isentoEsgoto: false,
-        isentoServicoBasico: false,
-        isentoLuz: false,
-        isentoCond: false,
+        
+        
+        
+        
+        
       );
 
       final leitura1 = Leitura(
@@ -597,11 +597,11 @@ void main() {
         id: 'casa-11',
         numero: 11,
         ativa: true,
-        isentoAgua: false,
-        isentoEsgoto: false,
-        isentoServicoBasico: false,
-        isentoLuz: false,
-        isentoCond: false,
+        
+        
+        
+        
+        
       );
 
       final leitura2 = Leitura(
@@ -633,11 +633,11 @@ void main() {
         id: 'casa-12',
         numero: 12,
         ativa: true,
-        isentoAgua: false,
-        isentoEsgoto: false,
-        isentoServicoBasico: false,
-        isentoLuz: false,
-        isentoCond: false,
+        
+        
+        
+        
+        
       );
 
       final leitura3 = Leitura(
@@ -670,11 +670,11 @@ void main() {
         id: 'casa-13',
         numero: 13,
         ativa: true,
-        isentoAgua: false,
-        isentoEsgoto: false,
-        isentoServicoBasico: false,
-        isentoLuz: false,
-        isentoCond: false,
+        
+        
+        
+        
+        
       );
 
       final leitura4 = Leitura(
@@ -716,11 +716,11 @@ void main() {
         id: 'casa-14',
         numero: 14,
         ativa: true,
-        isentoAgua: false,
-        isentoEsgoto: false,
-        isentoServicoBasico: false,
-        isentoLuz: false,
-        isentoCond: false,
+        
+        
+        
+        
+        
       );
 
       final leitura = Leitura(
@@ -776,11 +776,11 @@ void main() {
         id: 'casa-15',
         numero: 15,
         ativa: true,
-        isentoAgua: false,
-        isentoEsgoto: false,
-        isentoServicoBasico: false,
-        isentoLuz: false,
-        isentoCond: false,
+        
+        
+        
+        
+        
       );
 
       final leitura = Leitura(
@@ -838,11 +838,11 @@ void main() {
         id: 'casa-1',
         numero: 1,
         ativa: true,
-        isentoAgua: false,
-        isentoEsgoto: false,
-        isentoServicoBasico: false,
-        isentoLuz: false,
-        isentoCond: false,
+        
+        
+        
+        
+        
       );
 
       // Leitura de março
@@ -923,11 +923,11 @@ void main() {
         id: 'casa-5',
         numero: 5,
         ativa: true,
-        isentoAgua: false,
-        isentoEsgoto: false,
-        isentoServicoBasico: false,
-        isentoLuz: false,
-        isentoCond: false,
+        
+        
+        
+        
+        
       );
 
       final leitura = Leitura(

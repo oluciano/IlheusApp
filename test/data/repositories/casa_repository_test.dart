@@ -1,61 +1,70 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:uuid/uuid.dart';
 
+import 'package:ilheus_app/features/agua/data/datasources/abertura_mes_datasource.dart';
 import 'package:ilheus_app/features/agua/data/repositories/casa_repository_impl.dart';
 import 'package:ilheus_app/features/agua/domain/models/casa.dart';
-import 'package:ilheus_app/features/agua/domain/repositories/casa_repository.dart';
 
 class MockDatabase extends Mock implements Database {}
 
-class FakeCasaDataSource implements CasaDataSource {
-  @override
-  final Database db;
-  FakeCasaDataSource(this.db);
-}
-
 void main() {
   group('CasaRepository', () {
-    late CasaRepository repository;
+    late CasaRepositoryImpl repository;
     late MockDatabase db;
+
+    setUpAll(() {
+      registerFallbackValue(
+        <String, dynamic>{},
+      );
+    });
 
     setUp(() {
       db = MockDatabase();
-      repository = CasaRepositoryImpl(FakeCasaDataSource(db));
+      final dataSource = CasaDataSource(db);
+      repository = CasaRepositoryImpl(dataSource);
     });
 
     group('salvarCasa', () {
       test('insere casa no banco com sucesso', () async {
-        final casa = Casa(
-          id: const Uuid().v4(),
-          numero: 5,
-        );
+        when(() => db.insert(
+              'casas',
+              any(),
+              conflictAlgorithm: any(named: 'conflictAlgorithm'),
+            )).thenAnswer((_) async => 1);
 
-        when(() => db.insert('casas', casa.toMap(),
-                conflictAlgorithm: any(named: 'conflictAlgorithm')))
-            .thenAnswer((_) async => 1);
+        await repository.salvarCasa(Casa(
+          id: 'casa-1',
+          numero: 1,
+          ativa: true,
+          isento: false,
+          ehAdministrador: false,
+        ));
 
-        await repository.salvarCasa(casa);
-
-        verify(() => db.insert('casas', casa.toMap(),
-            conflictAlgorithm: any(named: 'conflictAlgorithm'))).called(1);
+        verify(() => db.insert(
+              'casas',
+              any(that: containsPair('numero', 1)),
+              conflictAlgorithm: any(named: 'conflictAlgorithm'),
+            )).called(1);
       });
 
       test('insere casa quiiosque (numero 23)', () async {
-        final casa = Casa(
-          id: const Uuid().v4(),
+        when(() => db.insert(
+              'casas',
+              any(),
+              conflictAlgorithm: any(named: 'conflictAlgorithm'),
+            )).thenAnswer((_) async => 1);
+
+        await repository.salvarCasa(Casa(
+          id: 'casa-23',
           numero: 23,
-        );
+        ));
 
-        when(() => db.insert('casas', casa.toMap(),
-                conflictAlgorithm: any(named: 'conflictAlgorithm')))
-            .thenAnswer((_) async => 1);
-
-        await repository.salvarCasa(casa);
-
-        verify(() => db.insert('casas', casa.toMap(),
-            conflictAlgorithm: any(named: 'conflictAlgorithm'))).called(1);
+        verify(() => db.insert(
+              'casas',
+              any(that: containsPair('numero', 23)),
+              conflictAlgorithm: any(named: 'conflictAlgorithm'),
+            )).called(1);
       });
     });
 
@@ -66,31 +75,22 @@ void main() {
             'id': 'casa-1',
             'numero': 1,
             'ativa': 1,
-            'isento_agua': 0,
-            'isento_esgoto': 0,
-            'isento_servico_basico': 0,
-            'isento_luz': 0,
-            'isento_cond': 0,
+            'isento': 0,
+            'eh_administrador': 0,
           },
           {
             'id': 'casa-2',
             'numero': 2,
             'ativa': 1,
-            'isento_agua': 0,
-            'isento_esgoto': 1,
-            'isento_servico_basico': 0,
-            'isento_luz': 0,
-            'isento_cond': 0,
+            'isento': 0,
+            'eh_administrador': 1,
           },
           {
-            'id': 'casa-3',
+            'id': 'casa-23',
             'numero': 23,
             'ativa': 1,
-            'isento_agua': 0,
-            'isento_esgoto': 0,
-            'isento_servico_basico': 0,
-            'isento_luz': 0,
-            'isento_cond': 0,
+            'isento': 0,
+            'eh_administrador': 0,
           },
         ];
 
@@ -102,7 +102,7 @@ void main() {
         expect(casas.length, 3);
         expect(casas[0].numero, 1);
         expect(casas[1].numero, 2);
-        expect(casas[1].isentoEsgoto, isTrue);
+        expect(casas[1].ehAdministrador, isTrue);
         expect(casas[2].isQuiosque, isTrue);
       });
 
@@ -122,11 +122,8 @@ void main() {
             'id': 'casa-7',
             'numero': 7,
             'ativa': 1,
-            'isento_agua': 0,
-            'isento_esgoto': 0,
-            'isento_servico_basico': 0,
-            'isento_luz': 1,
-            'isento_cond': 0,
+            'isento': 0,
+            'eh_administrador': 0,
           },
         ];
 
@@ -139,7 +136,7 @@ void main() {
 
         expect(casa, isNotNull);
         expect(casa!.numero, 7);
-        expect(casa.isentoLuz, isTrue);
+        expect(casa.isento, isFalse);
       });
 
       test('retorna null quando casa nao existe', () async {
@@ -160,21 +157,15 @@ void main() {
             'id': 'casa-1',
             'numero': 1,
             'ativa': 1,
-            'isento_agua': 0,
-            'isento_esgoto': 0,
-            'isento_servico_basico': 0,
-            'isento_luz': 0,
-            'isento_cond': 0,
+            'isento': 0,
+            'eh_administrador': 0,
           },
           {
             'id': 'casa-3',
             'numero': 3,
             'ativa': 1,
-            'isento_agua': 1,
-            'isento_esgoto': 0,
-            'isento_servico_basico': 0,
-            'isento_luz': 0,
-            'isento_cond': 0,
+            'isento': 1,
+            'eh_administrador': 0,
           },
         ];
 
@@ -184,10 +175,11 @@ void main() {
                 orderBy: any(named: 'orderBy')))
             .thenAnswer((_) async => rows);
 
-        final ativas = await repository.buscarAtivas();
+        final casas = await repository.buscarAtivas();
 
-        expect(ativas.length, 2);
-        expect(ativas.every((c) => c.ativa), isTrue);
+        expect(casas.length, 2);
+        expect(casas.every((c) => c.ativa), isTrue);
+        expect(casas[1].isento, isTrue);
       });
 
       test('retorna lista vazia quando nao ha casas ativas', () async {
@@ -197,62 +189,75 @@ void main() {
                 orderBy: any(named: 'orderBy')))
             .thenAnswer((_) async => []);
 
-        final ativas = await repository.buscarAtivas();
-        expect(ativas, isEmpty);
+        final casas = await repository.buscarAtivas();
+        expect(casas, isEmpty);
       });
     });
 
-    group('atualizarIsencoes', () {
-      test('atualiza todas as flags de isencao', () async {
-        late Map<String, dynamic> updateMap;
-        when(() => db.update('casas', any(),
-                where: any(named: 'where'),
-                whereArgs: any(named: 'whereArgs')))
-            .thenAnswer((inv) {
-          updateMap = inv.positionalArguments[1] as Map<String, dynamic>;
-          return Future.value(1);
-        });
+    group('atualizarIsencao', () {
+      test('atualiza flag isento para true', () async {
+        when(() => db.update(
+              'casas',
+              any(),
+              where: any(named: 'where'),
+              whereArgs: any(named: 'whereArgs'),
+            )).thenAnswer((_) async => 1);
 
-        await repository.atualizarIsencoes(
-          casaId: 'casa-5',
-          isentoAgua: true,
-          isentoEsgoto: false,
-          isentoServicoBasico: true,
-          isentoLuz: false,
-          isentoCond: true,
+        await repository.atualizarIsencao(
+          casaId: 'casa-8',
+          isento: true,
         );
 
-        expect(updateMap['isento_agua'], 1);
-        expect(updateMap['isento_esgoto'], 0);
-        expect(updateMap['isento_servico_basico'], 1);
-        expect(updateMap['isento_luz'], 0);
-        expect(updateMap['isento_cond'], 1);
+        verify(() => db.update(
+              'casas',
+              any(that: containsPair('isento', 1)),
+              where: any(named: 'where'),
+              whereArgs: any(named: 'whereArgs'),
+            )).called(1);
       });
 
-      test('remove todas as isencoes quando flags sao false', () async {
-        late Map<String, dynamic> updateMap;
-        when(() => db.update('casas', any(),
-                where: any(named: 'where'),
-                whereArgs: any(named: 'whereArgs')))
-            .thenAnswer((inv) {
-          updateMap = inv.positionalArguments[1] as Map<String, dynamic>;
-          return Future.value(1);
-        });
+      test('remove isencao (false)', () async {
+        when(() => db.update(
+              'casas',
+              any(),
+              where: any(named: 'where'),
+              whereArgs: any(named: 'whereArgs'),
+            )).thenAnswer((_) async => 1);
 
-        await repository.atualizarIsencoes(
-          casaId: 'casa-5',
-          isentoAgua: false,
-          isentoEsgoto: false,
-          isentoServicoBasico: false,
-          isentoLuz: false,
-          isentoCond: false,
+        await repository.atualizarIsencao(
+          casaId: 'casa-8',
+          isento: false,
         );
 
-        expect(updateMap['isento_agua'], 0);
-        expect(updateMap['isento_esgoto'], 0);
-        expect(updateMap['isento_servico_basico'], 0);
-        expect(updateMap['isento_luz'], 0);
-        expect(updateMap['isento_cond'], 0);
+        verify(() => db.update(
+              'casas',
+              any(that: containsPair('isento', 0)),
+              where: any(named: 'where'),
+              whereArgs: any(named: 'whereArgs'),
+            )).called(1);
+      });
+    });
+
+    group('atualizarAdministrador', () {
+      test('atualiza flag eh_administrador para true', () async {
+        when(() => db.update(
+              'casas',
+              any(),
+              where: any(named: 'where'),
+              whereArgs: any(named: 'whereArgs'),
+            )).thenAnswer((_) async => 1);
+
+        await repository.atualizarAdministrador(
+          casaId: 'casa-2',
+          ehAdministrador: true,
+        );
+
+        verify(() => db.update(
+              'casas',
+              any(that: containsPair('eh_administrador', 1)),
+              where: any(named: 'where'),
+              whereArgs: any(named: 'whereArgs'),
+            )).called(1);
       });
     });
   });

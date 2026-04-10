@@ -60,24 +60,28 @@ class CasaRepositoryImpl implements CasaRepository {
   }
 
   @override
-  Future<void> atualizarIsencoes({
+  Future<void> atualizarIsencao({
     required String casaId,
-    required bool isentoAgua,
-    required bool isentoEsgoto,
-    required bool isentoServicoBasico,
-    required bool isentoLuz,
-    required bool isentoCond,
+    required bool isento,
   }) async {
     final db = dataSource.db;
     await db.update(
       'casas',
-      {
-        'isento_agua': isentoAgua ? 1 : 0,
-        'isento_esgoto': isentoEsgoto ? 1 : 0,
-        'isento_servico_basico': isentoServicoBasico ? 1 : 0,
-        'isento_luz': isentoLuz ? 1 : 0,
-        'isento_cond': isentoCond ? 1 : 0,
-      },
+      {'isento': isento ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: [casaId],
+    );
+  }
+
+  @override
+  Future<void> atualizarAdministrador({
+    required String casaId,
+    required bool ehAdministrador,
+  }) async {
+    final db = dataSource.db;
+    await db.update(
+      'casas',
+      {'eh_administrador': ehAdministrador ? 1 : 0},
       where: 'id = ?',
       whereArgs: [casaId],
     );

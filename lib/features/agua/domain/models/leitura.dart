@@ -1,5 +1,3 @@
-import 'package:ilheus_app/features/agua/domain/models/casa.dart';
-
 /// Leitura mensal de hidrômetro de uma casa.
 class Leitura {
   final String id;

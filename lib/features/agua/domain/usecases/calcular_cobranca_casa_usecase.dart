@@ -57,8 +57,12 @@ class CalcularCobrancaCasaUseCase {
     }
 
     // Cálculo de cada componente
+    // Regra de isenção simplificada:
+    //   isento = true  → paga SOMENTE condomínio
+    //   isento = false → paga tudo normalmente
     final valorAgua =
-        configuracao.componenteAguaAtivo && !casa.isentoAgua
+        !casa.isento &&
+            configuracao.componenteAguaAtivo
             ? _calcularAgua(
                 leitura.consumoM3,
                 contaCorsan.consumoM3,
@@ -76,24 +80,26 @@ class CalcularCobrancaCasaUseCase {
             : 0;
 
     final valorEsgoto =
-        configuracao.componenteEsgotoAtivo && !casa.isentoEsgoto
+        !casa.isento &&
+            configuracao.componenteEsgotoAtivo
             ? _calcularIgualitario(contaCorsan.valorEsgoto.centavos)
             : 0;
 
-    final valorServicoBasico = configuracao.componenteServicoBasicoAtivo &&
-            !casa.isentoServicoBasico
+    final valorServicoBasico = !casa.isento &&
+            configuracao.componenteServicoBasicoAtivo
         ? _calcularIgualitario(contaCorsan.valorServicoBasico.centavos)
         : 0;
 
     final valorLuz =
-        configuracao.componenteLuzAtivo && !casa.isentoLuz
+        !casa.isento &&
+            configuracao.componenteLuzAtivo
             ? _calcularIgualitario(contaLuz.valorTotal.centavos)
             : 0;
 
-    final valorCond =
-        configuracao.componenteCondAtivo && !casa.isentoCond
-            ? configuracao.valorCond.centavos
-            : 0;
+    // Condomínio: isento PAGA (regra de negócio)
+    final valorCond = configuracao.componenteCondAtivo
+        ? configuracao.valorCond.centavos
+        : 0;
 
     final valorJuros = _calcularJuros(
       contaCorsan.valorJuros?.centavos ?? 0,
@@ -111,15 +117,14 @@ class CalcularCobrancaCasaUseCase {
       (sum, debito) => sum + (debito.isAberto ? debito.valorCentavos : 0),
     );
 
-    // Total = soma de todos os componentes
+    // Total = soma dos componentes do mês (débito NUNCA entra — aparece como alerta separado)
     final valorTotal = valorAgua +
         valorEsgoto +
         valorServicoBasico +
         valorLuz +
         valorCond +
         valorQuiosque +
-        valorJuros +
-        valorDebitos;
+        valorJuros;
 
     return Cobranca(
       id: '',

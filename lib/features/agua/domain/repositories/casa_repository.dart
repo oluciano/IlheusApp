@@ -5,12 +5,12 @@ abstract class CasaRepository {
   Future<List<Casa>> buscarTodas();
   Future<Casa?> buscarPorNumero(int numero);
   Future<List<Casa>> buscarAtivas();
-  Future<void> atualizarIsencoes({
+  Future<void> atualizarIsencao({
     required String casaId,
-    required bool isentoAgua,
-    required bool isentoEsgoto,
-    required bool isentoServicoBasico,
-    required bool isentoLuz,
-    required bool isentoCond,
+    required bool isento,
+  });
+  Future<void> atualizarAdministrador({
+    required String casaId,
+    required bool ehAdministrador,
   });
 }

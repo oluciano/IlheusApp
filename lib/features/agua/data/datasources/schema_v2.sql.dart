@@ -6,11 +6,8 @@ CREATE TABLE IF NOT EXISTS casas (
   id TEXT PRIMARY KEY,
   numero INTEGER NOT NULL CHECK (numero >= 1 AND numero <= 23),
   ativa INTEGER NOT NULL DEFAULT 1,
-  isento_agua INTEGER NOT NULL DEFAULT 0,
-  isento_esgoto INTEGER NOT NULL DEFAULT 0,
-  isento_servico_basico INTEGER NOT NULL DEFAULT 0,
-  isento_luz INTEGER NOT NULL DEFAULT 0,
-  isento_cond INTEGER NOT NULL DEFAULT 0,
+  isento INTEGER NOT NULL DEFAULT 0,
+  eh_administrador INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 )
 ''';

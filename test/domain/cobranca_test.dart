@@ -83,7 +83,7 @@ void main() {
         expect(cobranca.valorJuros, 500);
       });
 
-      test('cobrança com isenção parcial (casa com isentoAgua)', () {
+      test('cobrança com água zerada (casa isenta)', () {
         final cobranca = Cobranca(
           id: 'cob-4',
           faturaId: 'fat-4',
