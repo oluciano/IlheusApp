@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ilheus_app/features/agua/domain/models/models.dart';
@@ -38,19 +37,24 @@ class AberturaMesNotifier extends StateNotifier<AberturaMesFormState> {
   Future<void> _carregarDadosMes(String mesAno) async {
     state = state.copyWith(isLoading: true);
 
-    final contaCorsan = await _repository.getContaCorsan(mesAno);
-    final contaLuz = await _repository.getContaLuz(mesAno);
-    final config = await _repository.getConfiguracaoMes(mesAno);
-    final despesas = await _repository.getDespesasExtras(mesAno);
+    try {
+      final contaCorsan = await _repository.getContaCorsan(mesAno);
+      final contaLuz = await _repository.getContaLuz(mesAno);
+      final config = await _repository.getConfiguracaoMes(mesAno);
+      final despesas = await _repository.getDespesasExtras(mesAno);
 
-    state = state.copyWith(
-      contaCorsan: contaCorsan ?? ContaCorsan(mesAno: mesAno),
-      contaLuz: contaLuz ?? ContaLuz(mesAno: mesAno),
-      configuracaoMes: config ?? ConfiguracaoMes(mesAno: mesAno),
-      despesasExtras: despesas,
-      isSalvo: config != null,
-      isLoading: false,
-    );
+      state = state.copyWith(
+        contaCorsan: contaCorsan ?? ContaCorsan(mesAno: mesAno),
+        contaLuz: contaLuz ?? ContaLuz(mesAno: mesAno),
+        configuracaoMes: config ?? ConfiguracaoMes(mesAno: mesAno),
+        despesasExtras: despesas,
+        isSalvo: config != null,
+        isLoading: false,
+      );
+    } catch (_) {
+      state = state.copyWith(isLoading: false);
+      rethrow;
+    }
   }
 
   void atualizarContaCorsan(ContaCorsan conta) {

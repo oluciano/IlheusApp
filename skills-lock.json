@@ -16,6 +16,11 @@
       "sourceType": "github",
       "computedHash": "898d4edc2f8e5f0ec0b2857b8845dbc58c69ab0bb41508161e798e358b60328a"
     },
+    "flutter-ui-ux": {
+      "source": "ajianaz/skills-collection",
+      "sourceType": "github",
+      "computedHash": "a0fc21d9328f80ab16c3e3463a12f4fd86462bc6370fe0ea016dc06ae1616654"
+    },
     "sqlite-db": {
       "source": "bfollington/terma",
       "sourceType": "github",

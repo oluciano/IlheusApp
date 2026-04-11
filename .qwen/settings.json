@@ -3,7 +3,8 @@
     "allow": [
       "Bash(git commit *)",
       "Bash(unzip *)",
-      "Bash(diff *)"
+      "Bash(diff *)",
+      "Bash(adb *)"
     ]
   },
   "$version": 3

@@ -19,7 +19,7 @@ class AberturaMesScreen extends ConsumerWidget {
 
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, _) {
         if (!didPop) {
           ref.read(aberturaMesFormProvider.notifier).reset();
           context.go('/home');
@@ -27,15 +27,14 @@ class AberturaMesScreen extends ConsumerWidget {
       },
       child: Scaffold(
         appBar: AppBar(
-          leading: temMesSelecionado
-              ? IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () {
-                    ref.read(aberturaMesFormProvider.notifier).reset();
-                    context.go('/home');
-                  },
-                )
-              : null,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              ref.read(aberturaMesFormProvider.notifier).reset();
+              context.go('/home');
+            },
+            tooltip: 'Voltar',
+          ),
           title: temMesSelecionado
               ? Text('Abertura do Mês ${formState.mesAno}')
               : const Text('Abertura de Mês'),
@@ -449,9 +448,15 @@ class AberturaMesScreen extends ConsumerWidget {
 
             if (sucesso) {
               ref.invalidate(mesesSalvosProvider);
-              ref.read(aberturaMesFormProvider.notifier).reset();
               if (context.mounted) {
-                context.go('/home');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Mês salvo com sucesso!'),
+                    backgroundColor: Colors.green,
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
               }
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -467,7 +472,12 @@ class AberturaMesScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         OutlinedButton.icon(
-          onPressed: state.isSalvo ? () {} : null,
+          onPressed: state.isSalvo
+              ? () {
+                  final mesAnoEncoded = Uri.encodeComponent(state.mesAno!);
+                  context.go('/lancamento-leituras/$mesAnoEncoded');
+                }
+              : null,
           icon: const Icon(Icons.fact_check),
           label: const Text('Lançar Leituras'),
         ),

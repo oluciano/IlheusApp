@@ -143,3 +143,13 @@ BEGIN
   UPDATE fatura_calculada SET updated_at = datetime('now') WHERE id = OLD.id;
 END
 ''';
+
+const String despesasExtras = '''
+CREATE TABLE IF NOT EXISTS despesas_extras (
+  id TEXT PRIMARY KEY,
+  mes_ano TEXT NOT NULL CHECK (mes_ano GLOB '[0-9][0-9]/[0-9][0-9][0-9][0-9]'),
+  descricao TEXT NOT NULL,
+  valor_total_centavos INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+)
+''';

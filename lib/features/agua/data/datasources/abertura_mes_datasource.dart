@@ -19,6 +19,7 @@ class AberturaMesDataSource {
     await db.execute(schema_v2.cobrancas);
     await db.execute(schema_v2.pagamentos);
     await db.execute(schema_v2.debitos);
+    await db.execute(schema_v2.despesasExtras);
     await db.execute(schema_v2.faturaUpdatedAtTrigger);
   }
 
@@ -30,6 +31,7 @@ class AberturaMesDataSource {
     await db.execute(schema_v2.cobrancas);
     await db.execute(schema_v2.pagamentos);
     await db.execute(schema_v2.debitos);
+    await db.execute(schema_v2.despesasExtras);
     await db.execute(schema_v2.faturaUpdatedAtTrigger);
   }
 }

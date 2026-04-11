@@ -127,10 +127,12 @@ class AberturaMesRepositoryImpl implements AberturaMesRepository {
   @override
   Future<List<String>> listarTodosMeses() async {
     final db = dataSource.db;
-    final result = await db.query(
-      'configuracao_mes',
-      columns: ['mes_ano'],
-      orderBy: 'mes_ano DESC',
+    // Ordena por ano/mês corretamente: converte MM/AAAA → AAAAMM para comparação
+    final result = await db.rawQuery(
+      '''
+      SELECT mes_ano FROM configuracao_mes
+      ORDER BY SUBSTR(mes_ano, 4, 4) DESC, SUBSTR(mes_ano, 1, 2) DESC
+      ''',
     );
     return result.map((row) => row['mes_ano'] as String).toList();
   }
