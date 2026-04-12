@@ -4,9 +4,39 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ilheus_app/features/agua/data/repositories/repository_locator.dart';
 import 'package:ilheus_app/features/agua/domain/models/models.dart';
 import 'package:ilheus_app/features/agua/domain/repositories/abertura_mes_repository.dart';
+import 'package:ilheus_app/features/agua/domain/repositories/leitura_repository.dart';
+import 'package:ilheus_app/features/agua/domain/repositories/casa_repository.dart';
+import 'package:ilheus_app/features/agua/domain/repositories/fatura_calculada_repository.dart';
+import 'package:ilheus_app/features/agua/domain/repositories/cobranca_repository.dart';
+import 'package:ilheus_app/features/agua/domain/repositories/debito_repository.dart';
+import 'package:ilheus_app/features/agua/domain/repositories/evento_uso_quiosque_repository.dart';
 
 final aberturaMesRepositoryProvider = Provider<AberturaMesRepository?>((ref) {
   return RepositoryLocator.aberturaMes;
+});
+
+final leituraRepositoryProvider = Provider<LeituraRepository?>((ref) {
+  return RepositoryLocator.leitura;
+});
+
+final casaRepositoryProvider = Provider<CasaRepository?>((ref) {
+  return RepositoryLocator.casa;
+});
+
+final faturaCalculadaRepositoryProvider = Provider<FaturaCalculadaRepository?>((ref) {
+  return RepositoryLocator.faturaCalculada;
+});
+
+final cobrancaRepositoryProvider = Provider<CobrancaRepository?>((ref) {
+  return RepositoryLocator.cobranca;
+});
+
+final debitoRepositoryProvider = Provider<DebitoRepository?>((ref) {
+  return RepositoryLocator.debito;
+});
+
+final eventoUsoQuiosqueRepositoryProvider = Provider<EventoUsoQuiosqueRepository?>((ref) {
+  return RepositoryLocator.eventoUsoQuiosque;
 });
 
 class WebNotImplemented implements AberturaMesRepository {

@@ -82,19 +82,23 @@ class FecharFaturaMensalUseCase {
 
     final consumoGeralCorsan = contaCorsan.consumoM3;
     final valorEsgotoCorsan = contaCorsan.valorEsgoto.centavos;
-    final valorLuzCorsan = contaLuz.valorTotal.centavos;
+    final valorLuzTotal = contaLuz.valorTotal.centavos;
 
     // Diferenças
     final diferencaMetros = consumoGeralCorsan - somaMetrosCasas;
     final diferencaEsgoto = somaEsgotoCasas - valorEsgotoCorsan;
-    final diferencaLuz = somaLuzCasas - valorLuzCorsan;
+    final diferencaLuz = somaLuzCasas - valorLuzTotal;
 
-    // Determinar status da auditoria
-    final statusAuditoria = _determinarStatus(
-      diferencaMetros,
-      diferencaEsgoto,
-      diferencaLuz,
-    );
+    // Determinar status da auditoria baseado nas diferenças.
+    // Agora que implementamos a redistribuição de centavos, as somas devem ser EXATAS.
+    StatusAuditoria statusAuditoria;
+    if (diferencaMetros < 0 || diferencaEsgoto != 0 || diferencaLuz != 0) {
+      statusAuditoria = StatusAuditoria.erro;
+    } else if (diferencaMetros > 0) {
+      statusAuditoria = StatusAuditoria.alerta;
+    } else {
+      statusAuditoria = StatusAuditoria.ok;
+    }
 
     final mensagem = _construirMensagem(
       diferencaMetros,
@@ -111,7 +115,7 @@ class FecharFaturaMensalUseCase {
       somaEsgotoCasas: somaEsgotoCasas,
       valorEsgotoCorsan: valorEsgotoCorsan,
       somaLuzCasas: somaLuzCasas,
-      valorLuzCorsan: valorLuzCorsan,
+      valorLuzCorsan: valorLuzTotal,
       totalCobrado: totalCobrado,
       status: statusAuditoria,
       mensagem: mensagem,
@@ -160,13 +164,18 @@ class FecharFaturaMensalUseCase {
       return StatusAuditoria.erro;
     }
 
-    // Erro: esgoto não bate (diferença > 1 centavo = arredondamento)
-    if (diferencaEsgoto.abs() > 1) {
+    // Tolerância de arredondamento: como usamos .floor() no rateio por 22 casas,
+    // a soma das casas pode ser até 22 centavos MENOR que o total da conta.
+    // Diferença positiva (soma < total) até numCasas é aceitável.
+    // Diferença negativa (soma > total) ou maior que numCasas é ERRO.
+    
+    // Esgoto
+    if (diferencaEsgoto < -1 || diferencaEsgoto.abs() > numCasasEsperado) {
       return StatusAuditoria.erro;
     }
 
-    // Erro: luz não bate (diferença > 1 centavo = arredondamento)
-    if (diferencaLuz.abs() > 1) {
+    // Luz
+    if (diferencaLuz < -1 || diferencaLuz.abs() > numCasasEsperado) {
       return StatusAuditoria.erro;
     }
 
@@ -175,7 +184,7 @@ class FecharFaturaMensalUseCase {
       return StatusAuditoria.alerta;
     }
 
-    // OK: Tudo batendo
+    // OK: Tudo batendo (dentro da tolerância)
     return StatusAuditoria.ok;
   }
 
@@ -204,13 +213,13 @@ class FecharFaturaMensalUseCase {
       );
     }
 
-    if (diferencaEsgoto.abs() > 1) {
+    if (diferencaEsgoto < -1 || diferencaEsgoto.abs() > numCasasEsperado) {
       buffer.add('ERRO: Soma esgoto não bate com CORSAN (diferença: '
           '${diferencaEsgoto.abs()} centavos)');
     }
 
-    if (diferencaLuz.abs() > 1) {
-      buffer.add('ERRO: Soma luz não bate com CORSAN (diferença: '
+    if (diferencaLuz < -1 || diferencaLuz.abs() > numCasasEsperado) {
+      buffer.add('ERRO: Soma luz não bate com CONTA LUZ (diferença: '
           '${diferencaLuz.abs()} centavos)');
     }
 

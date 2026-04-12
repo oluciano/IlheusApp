@@ -218,12 +218,7 @@ class _LancamentoLeiturasScreenState
           child: FilledButton.icon(
             onPressed: state.leituraCompleta
                 ? () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Tela de fechamento em desenvolvimento.'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
+                    context.push('/fechamento-mensal/${Uri.encodeComponent(widget.mesAno)}');
                   }
                 : null,
             icon: const Icon(Icons.fact_check),
@@ -261,7 +256,8 @@ class _LancamentoLeiturasScreenState
         casa: casa,
         leituraAnterior: leituraAnterior,
         controller: controller,
-        onSave: (valor) async {
+        isUltimaCasa: state.casas.last.id == casa.id,
+        onSave: (valor, continuar) async {
           final sucesso = await ref
               .read(lancamentoLeiturasProvider(widget.mesAno).notifier)
               .salvarLeitura(
@@ -272,25 +268,32 @@ class _LancamentoLeiturasScreenState
           if (!context.mounted) return;
 
           if (sucesso) {
-            if (context.mounted) Navigator.pop(context);
+            ref.invalidate(mesesSalvosProvider);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Leitura da Casa ${casa.numero} salva!'),
-                backgroundColor: Colors.green,
-                duration: const Duration(seconds: 2),
+                content: Text('Casa ${casa.numero} atualizada'),
+                backgroundColor: Colors.green.shade700,
+                duration: const Duration(milliseconds: 800),
+                behavior: SnackBarBehavior.floating,
+                width: 200,
               ),
             );
-          } else {
-            final errorState =
-                ref.read(lancamentoLeiturasProvider(widget.mesAno));
-            if (errorState.errorMessage != null && context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(errorState.errorMessage!),
-                  backgroundColor: Colors.red,
-                  duration: const Duration(seconds: 3),
-                ),
-              );
+
+            if (continuar) {
+              final indexAtual = state.casas.indexWhere((c) => c.id == casa.id);
+              if (indexAtual < state.casas.length - 1) {
+                final proximaCasa = state.casas[indexAtual + 1];
+                Navigator.pop(context);
+                Future.delayed(const Duration(milliseconds: 100), () {
+                  if (context.mounted) {
+                    _abrirBottomSheet(context, ref, proximaCasa, ref.read(lancamentoLeiturasProvider(widget.mesAno)));
+                  }
+                });
+              } else {
+                Navigator.pop(context);
+              }
+            } else {
+              Navigator.pop(context);
             }
           }
         },
@@ -413,12 +416,14 @@ class _LeituraBottomSheet extends StatefulWidget {
   final Casa casa;
   final int leituraAnterior;
   final TextEditingController controller;
-  final Future<void> Function(int valor) onSave;
+  final bool isUltimaCasa;
+  final Future<void> Function(int valor, bool continuar) onSave;
 
   const _LeituraBottomSheet({
     required this.casa,
     required this.leituraAnterior,
     required this.controller,
+    required this.isUltimaCasa,
     required this.onSave,
   });
 
@@ -430,7 +435,7 @@ class _LeituraBottomSheetState extends State<_LeituraBottomSheet> {
   bool _isSaving = false;
   String? _erroValidacao;
 
-  Future<void> _salvar() async {
+  Future<void> _salvar({required bool continuar}) async {
     final texto = widget.controller.text.trim();
     if (texto.isEmpty) {
       setState(() => _erroValidacao = 'Informe a leitura atual.');
@@ -459,7 +464,7 @@ class _LeituraBottomSheetState extends State<_LeituraBottomSheet> {
       _isSaving = true;
     });
 
-    await widget.onSave(valor);
+    await widget.onSave(valor, continuar);
 
     if (mounted) {
       setState(() => _isSaving = false);
@@ -480,19 +485,22 @@ class _LeituraBottomSheetState extends State<_LeituraBottomSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(
-                Icons.speed_rounded,
-                size: 48,
-                color: theme.colorScheme.primary,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Cancelar',
+                  ),
+                  Text(
+                    'Leitura — Casa ${widget.casa.numero.toString().padLeft(2, '0')}',
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 48), 
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Leitura — Casa ${widget.casa.numero.toString().padLeft(2, '0')}'
-                '${widget.casa.isento ? ' (Isenta)' : ''}',
-                style: theme.textTheme.titleLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               _campoReadonly(
                 label: 'Leitura anterior',
                 valor: '${widget.leituraAnterior} m³',
@@ -503,27 +511,39 @@ class _LeituraBottomSheetState extends State<_LeituraBottomSheet> {
                 const SizedBox(height: 8),
                 Text(
                   _erroValidacao!,
-                  style: TextStyle(
-                    color: theme.colorScheme.error,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: theme.colorScheme.error, fontSize: 13),
                 ),
               ],
               const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: _isSaving ? null : _salvar,
-                icon: _isSaving
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.save),
-                label: Text(_isSaving ? 'Salvando...' : 'Salvar'),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _isSaving ? null : () => _salvar(continuar: false),
+                      child: const Text('Salvar e Sair'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: FilledButton.icon(
+                      onPressed: (_isSaving || widget.isUltimaCasa) ? null : () => _salvar(continuar: true),
+                      icon: _isSaving
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.arrow_forward),
+                      label: Text(widget.isUltimaCasa ? 'Finalizar' : 'Salvar e Próxima'),
+                    ),
+                  ),
+                ],
               ),
+              if (widget.isUltimaCasa)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: FilledButton(
+                    onPressed: _isSaving ? null : () => _salvar(continuar: false),
+                    child: const Text('Salvar e Concluir'),
+                  ),
+                ),
               const SizedBox(height: 16),
             ],
           ),

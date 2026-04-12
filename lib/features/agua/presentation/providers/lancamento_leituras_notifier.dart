@@ -2,16 +2,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ilheus_app/features/agua/data/repositories/repository_locator.dart';
 import 'package:ilheus_app/features/agua/domain/models/leitura.dart';
+import 'package:ilheus_app/features/agua/domain/models/casa.dart';
 import 'package:ilheus_app/features/agua/domain/repositories/casa_repository.dart';
 import 'package:ilheus_app/features/agua/domain/repositories/leitura_repository.dart';
 import 'package:ilheus_app/features/agua/presentation/providers/lancamento_leituras_state.dart';
+import 'package:ilheus_app/features/agua/presentation/providers/database_providers.dart';
+import 'package:ilheus_app/features/agua/presentation/providers/home_providers.dart';
 import 'package:uuid/uuid.dart';
 
 /// Provider principal da tela de lançamento de leituras.
-///
-/// Uso:
-///   ref.read(lancamentoLeiturasProvider('04/2026').notifier).carregarDados();
-///   ref.watch(lancamentoLeiturasProvider('04/2026'));
 final lancamentoLeiturasProvider = StateNotifierProvider.family<
     LancamentoLeiturasNotifier, LancamentoLeiturasState, String>((ref, mesAno) {
   final casaRepo = ref.watch(casaRepositoryProvider);
@@ -19,6 +18,7 @@ final lancamentoLeiturasProvider = StateNotifierProvider.family<
 
   if (casaRepo == null || leituraRepo == null) {
     return LancamentoLeiturasNotifier(
+      ref: ref,
       casaRepository: null,
       leituraRepository: null,
       mesAno: mesAno,
@@ -26,20 +26,11 @@ final lancamentoLeiturasProvider = StateNotifierProvider.family<
   }
 
   return LancamentoLeiturasNotifier(
+    ref: ref,
     casaRepository: casaRepo,
     leituraRepository: leituraRepo,
     mesAno: mesAno,
   );
-});
-
-/// Provider para o repository de leitura (export do repository_locator).
-final leituraRepositoryProvider = Provider<LeituraRepository?>((ref) {
-  return RepositoryLocator.leitura;
-});
-
-/// Provider para o repository de casas (export do repository_locator).
-final casaRepositoryProvider = Provider<CasaRepository?>((ref) {
-  return RepositoryLocator.casa;
 });
 
 class LancamentoLeiturasNotifier
@@ -47,9 +38,11 @@ class LancamentoLeiturasNotifier
   final CasaRepository? _casaRepository;
   final LeituraRepository? _leituraRepository;
   final String mesAno;
+  final StateNotifierProviderRef ref;
   final _uuid = const Uuid();
 
   LancamentoLeiturasNotifier({
+    required this.ref,
     CasaRepository? casaRepository,
     LeituraRepository? leituraRepository,
     required this.mesAno,
@@ -99,6 +92,17 @@ class LancamentoLeiturasNotifier
       final leiturasAtuais =
           await _leituraRepository.buscarLeiturasPorMes(mesAno);
 
+      // Ordenação por relevância (Pendentes no topo, seguidas por ordem numérica)
+      final casasOrdenadas = List<Casa>.from(casasResidenciais)..sort((a, b) {
+        final temLeituraA = leiturasAtuais.any((l) => l.casaId == a.id);
+        final temLeituraB = leiturasAtuais.any((l) => l.casaId == b.id);
+        
+        if (temLeituraA != temLeituraB) {
+          return temLeituraA ? 1 : -1; // Sem leitura (false) vem antes
+        }
+        return a.numero.compareTo(b.numero);
+      });
+
       // Leituras do mês anterior
       final mesAnterior = _getMesAnoAnterior();
       List<Leitura> leiturasAnteriores = [];
@@ -108,7 +112,7 @@ class LancamentoLeiturasNotifier
       }
 
       state = state.copyWith(
-        casas: casasResidenciais,
+        casas: casasOrdenadas,
         leiturasSalvas: leiturasAtuais,
         leiturasMesAnterior: leiturasAnteriores,
         isLoading: false,
@@ -163,7 +167,10 @@ class LancamentoLeiturasNotifier
 
       await _leituraRepository.salvarLeitura(leitura);
 
-      // Recarrega estado
+      // Invalida provider da home para atualizar Dashboard
+      ref.invalidate(mesesSalvosProvider);
+
+      // Recarrega estado local
       await carregarDados();
 
       return true;

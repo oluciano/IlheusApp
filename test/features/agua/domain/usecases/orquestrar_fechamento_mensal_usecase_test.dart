@@ -110,6 +110,31 @@ void main() {
           status: StatusDebito.aberto,
         ),
       );
+      registerFallbackValue(
+        const FaturaCalculada(
+          id: 'dummy',
+          mesAno: '2026-04',
+          status: StatusFatura.rascunho,
+        ),
+      );
+      registerFallbackValue(
+        ContaCorsan(
+          mesAno: mesAno,
+          leituraAnteriorM3: 0,
+          leituraAtualM3: 0,
+          valorAgua: const ValorMonetario(0),
+          valorEsgoto: const ValorMonetario(0),
+          valorServicoBasico: const ValorMonetario(0),
+        ),
+      );
+      registerFallbackValue(
+        const ContaLuz(
+          mesAno: mesAno,
+          valorTotal: ValorMonetario(0),
+        ),
+      );
+      registerFallbackValue(<Cobranca>[]);
+      registerFallbackValue(<Leitura>[]);
     });
 
     setUp(() {
@@ -454,11 +479,11 @@ void main() {
         );
 
         when(() => fecharFaturaUseCase.execute(
-              cobrancas: cobrancas,
-              contaCorsan: contaCorsan,
-              contaLuz: contaLuz,
-              faturaRascunho: fatura,
-              leituras: leituras,
+              cobrancas: any(named: 'cobrancas'),
+              contaCorsan: any(named: 'contaCorsan'),
+              contaLuz: any(named: 'contaLuz'),
+              faturaRascunho: any(named: 'faturaRascunho'),
+              leituras: any(named: 'leituras'),
             )).thenReturn(resultadoFatura);
 
         when(() => cobrancaRepository.salvarCobranca(any()))
@@ -468,6 +493,9 @@ void main() {
               fatura.id,
               StatusFatura.publicado,
             )).thenAnswer((_) async {});
+
+        when(() => faturaRepository.salvarFatura(any()))
+            .thenAnswer((_) async {});
 
         // Act
         final resultado = await useCase.execute(
@@ -586,11 +614,11 @@ void main() {
         );
 
         when(() => fecharFaturaUseCase.execute(
-              cobrancas: cobrancas,
-              contaCorsan: contaCorsan,
-              contaLuz: contaLuz,
-              faturaRascunho: fatura,
-              leituras: leituras,
+              cobrancas: any(named: 'cobrancas'),
+              contaCorsan: any(named: 'contaCorsan'),
+              contaLuz: any(named: 'contaLuz'),
+              faturaRascunho: any(named: 'faturaRascunho'),
+              leituras: any(named: 'leituras'),
             )).thenReturn(resultadoFatura);
 
         when(() => cobrancaRepository.salvarCobranca(any()))
@@ -600,6 +628,9 @@ void main() {
               fatura.id,
               StatusFatura.publicado,
             )).thenAnswer((_) async {});
+
+        when(() => faturaRepository.salvarFatura(any()))
+            .thenAnswer((_) async {});
 
         // Act
         final resultado = await useCase.execute(
@@ -708,11 +739,11 @@ void main() {
         );
 
         when(() => fecharFaturaUseCase.execute(
-              cobrancas: cobrancas,
-              contaCorsan: contaCorsan,
-              contaLuz: contaLuz,
-              faturaRascunho: fatura,
-              leituras: leituras,
+              cobrancas: any(named: 'cobrancas'),
+              contaCorsan: any(named: 'contaCorsan'),
+              contaLuz: any(named: 'contaLuz'),
+              faturaRascunho: any(named: 'faturaRascunho'),
+              leituras: any(named: 'leituras'),
             )).thenReturn(resultadoFatura);
 
         // Act & Assert
@@ -828,11 +859,11 @@ void main() {
         );
 
         when(() => fecharFaturaUseCase.execute(
-              cobrancas: cobrancas,
-              contaCorsan: contaCorsan,
-              contaLuz: contaLuz,
-              faturaRascunho: fatura,
-              leituras: leituras,
+              cobrancas: any(named: 'cobrancas'),
+              contaCorsan: any(named: 'contaCorsan'),
+              contaLuz: any(named: 'contaLuz'),
+              faturaRascunho: any(named: 'faturaRascunho'),
+              leituras: any(named: 'leituras'),
             )).thenReturn(resultadoFatura);
 
         when(() => cobrancaRepository.salvarCobranca(any()))
@@ -842,6 +873,9 @@ void main() {
               fatura.id,
               StatusFatura.publicado,
             )).thenAnswer((_) async {});
+
+        when(() => faturaRepository.salvarFatura(any()))
+            .thenAnswer((_) async {});
 
         // Act
         final resultado = await useCase.execute(
@@ -979,11 +1013,11 @@ void main() {
         );
 
         when(() => fecharFaturaUseCase.execute(
-              cobrancas: cobrancas,
-              contaCorsan: contaCorsan,
-              contaLuz: contaLuz,
-              faturaRascunho: fatura,
-              leituras: leituras,
+              cobrancas: any(named: 'cobrancas'),
+              contaCorsan: any(named: 'contaCorsan'),
+              contaLuz: any(named: 'contaLuz'),
+              faturaRascunho: any(named: 'faturaRascunho'),
+              leituras: any(named: 'leituras'),
             )).thenReturn(resultadoFatura);
 
         when(() => cobrancaRepository.salvarCobranca(any()))
@@ -993,6 +1027,9 @@ void main() {
               fatura.id,
               StatusFatura.publicado,
             )).thenAnswer((_) async {});
+
+        when(() => faturaRepository.salvarFatura(any()))
+            .thenAnswer((_) async {});
 
         // Act
         final resultado = await useCase.execute(
@@ -1109,11 +1146,11 @@ void main() {
         );
 
         when(() => fecharFaturaUseCase.execute(
-              cobrancas: cobrancas,
-              contaCorsan: contaCorsan,
-              contaLuz: contaLuz,
-              faturaRascunho: fatura,
-              leituras: leituras,
+              cobrancas: any(named: 'cobrancas'),
+              contaCorsan: any(named: 'contaCorsan'),
+              contaLuz: any(named: 'contaLuz'),
+              faturaRascunho: any(named: 'faturaRascunho'),
+              leituras: any(named: 'leituras'),
             )).thenReturn(resultadoFatura);
 
         when(() => cobrancaRepository.salvarCobranca(any()))
@@ -1123,6 +1160,9 @@ void main() {
               fatura.id,
               StatusFatura.publicado,
             )).thenAnswer((_) async {});
+
+        when(() => faturaRepository.salvarFatura(any()))
+            .thenAnswer((_) async {});
 
         when(() => cobrancaRepository.marcarInadimplentesPorVencimento(any()))
             .thenAnswer((_) async {});

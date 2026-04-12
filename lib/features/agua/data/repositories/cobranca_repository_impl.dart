@@ -78,9 +78,17 @@ class CobrancaRepositoryImpl implements CobrancaRepository {
     final db = dataSource.db;
 
     // Calcula o mês anterior (YYYY-MM)
-    final partes = mesAtual.split('-');
-    int ano = int.parse(partes[0]);
-    int mes = int.parse(partes[1]);
+    int mes;
+    int ano;
+    if (mesAtual.contains('-')) {
+      final partes = mesAtual.split('-');
+      ano = int.parse(partes[0]);
+      mes = int.parse(partes[1]);
+    } else {
+      final partes = mesAtual.split('/');
+      mes = int.parse(partes[0]);
+      ano = int.parse(partes[1]);
+    }
 
     if (mes == 1) {
       mes = 12;
@@ -89,7 +97,7 @@ class CobrancaRepositoryImpl implements CobrancaRepository {
       mes--;
     }
 
-    final mesAnterior = '$ano-${mes.toString().padLeft(2, '0')}';
+    final mesAnteriorFormatado = '$ano-${mes.toString().padLeft(2, '0')}';
 
     // Conta quantas casas ficaram inadimplentes no mês anterior
     final result = await db.rawQuery(
@@ -97,9 +105,13 @@ class CobrancaRepositoryImpl implements CobrancaRepository {
       SELECT COUNT(*) as total
       FROM cobrancas c
       INNER JOIN fatura_calculada f ON f.id = c.fatura_id
-      WHERE f.mes_ano = ? AND c.status = ?
+      WHERE (f.mes_ano = ? OR f.mes_ano = ?) AND c.status = ?
       ''',
-      [mesAnterior, StatusCobranca.inadimplente.name],
+      [
+        mesAnteriorFormatado,
+        '${mes.toString().padLeft(2, '0')}/$ano',
+        StatusCobranca.inadimplente.name
+      ],
     );
 
     if (result.isEmpty) return 0;
@@ -110,10 +122,18 @@ class CobrancaRepositoryImpl implements CobrancaRepository {
   Future<void> marcarInadimplentesPorVencimento(String mesAtual) async {
     final db = dataSource.db;
 
-    // Calcula o mês anterior (YYYY-MM)
-    final partes = mesAtual.split('-');
-    int ano = int.parse(partes[0]);
-    int mes = int.parse(partes[1]);
+    // Calcula o mês anterior
+    int mes;
+    int ano;
+    if (mesAtual.contains('-')) {
+      final partes = mesAtual.split('-');
+      ano = int.parse(partes[0]);
+      mes = int.parse(partes[1]);
+    } else {
+      final partes = mesAtual.split('/');
+      mes = int.parse(partes[0]);
+      ano = int.parse(partes[1]);
+    }
 
     if (mes == 1) {
       mes = 12;
@@ -122,7 +142,8 @@ class CobrancaRepositoryImpl implements CobrancaRepository {
       mes--;
     }
 
-    final mesAnterior = '$ano-${mes.toString().padLeft(2, '0')}';
+    final mesAnteriorYm = '$ano-${mes.toString().padLeft(2, '0')}';
+    final mesAnteriorMy = '${mes.toString().padLeft(2, '0')}/$ano';
 
     // Marca como inadimplente todas as cobranças do mês anterior que:
     // 1. Estão com status pendente
@@ -136,14 +157,15 @@ class CobrancaRepositoryImpl implements CobrancaRepository {
         SELECT c.id FROM cobrancas c
         INNER JOIN fatura_calculada f ON f.id = c.fatura_id
         INNER JOIN conta_corsan cc ON cc.mes_ano = f.mes_ano
-        WHERE f.mes_ano = ?
+        WHERE (f.mes_ano = ? OR f.mes_ano = ?)
           AND c.status = ?
           AND DATE(cc.vencimento) < DATE('now')
       )
       ''',
       [
         StatusCobranca.inadimplente.name,
-        mesAnterior,
+        mesAnteriorYm,
+        mesAnteriorMy,
         StatusCobranca.pendente.name,
       ],
     );

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ilheus_app/features/agua/presentation/screens/abertura_mes_screen.dart';
 import 'package:ilheus_app/features/agua/presentation/screens/home_screen.dart';
 import 'package:ilheus_app/features/agua/presentation/screens/lancamento_leituras_screen.dart';
+import 'package:ilheus_app/features/agua/presentation/screens/fechamento_mensal_screen.dart';
 import 'package:ilheus_app/features/avisos/presentation/screens/avisos_screen.dart';
 import 'package:ilheus_app/features/reservas/presentation/screens/reservas_screen.dart';
 import 'package:ilheus_app/shared/widgets/main_layout.dart';
@@ -63,6 +64,15 @@ final GoRouter appRouter = GoRouter(
             final mesAno = Uri.decodeComponent(state.pathParameters['mesAno']!);
             return _SlideFadePage(
               child: LancamentoLeiturasScreen(mesAno: mesAno),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/fechamento-mensal/:mesAno',
+          pageBuilder: (_, state) {
+            final mesAno = Uri.decodeComponent(state.pathParameters['mesAno']!);
+            return _SlideFadePage(
+              child: FechamentoMensalScreen(mesAno: mesAno),
             );
           },
         ),

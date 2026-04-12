@@ -8,6 +8,12 @@ class AberturaMesFormState {
   final List<DespesaExtra> despesasExtras;
   final bool isSalvo;
   final bool isLoading;
+  final bool leituraCompleta;
+  
+  // Referências do mês anterior para UX
+  final ContaCorsan? contaCorsanAnterior;
+  final ContaLuz? contaLuzAnterior;
+  final ConfiguracaoMes? configuracaoAnterior;
 
   const AberturaMesFormState({
     this.mesAno,
@@ -17,6 +23,10 @@ class AberturaMesFormState {
     this.despesasExtras = const [],
     this.isSalvo = false,
     this.isLoading = false,
+    this.leituraCompleta = false,
+    this.contaCorsanAnterior,
+    this.contaLuzAnterior,
+    this.configuracaoAnterior,
   });
 
   AberturaMesFormState copyWith({
@@ -27,6 +37,10 @@ class AberturaMesFormState {
     List<DespesaExtra>? despesasExtras,
     bool? isSalvo,
     bool? isLoading,
+    bool? leituraCompleta,
+    ContaCorsan? contaCorsanAnterior,
+    ContaLuz? contaLuzAnterior,
+    ConfiguracaoMes? configuracaoAnterior,
   }) {
     return AberturaMesFormState(
       mesAno: mesAno ?? this.mesAno,
@@ -36,6 +50,10 @@ class AberturaMesFormState {
       despesasExtras: despesasExtras ?? this.despesasExtras,
       isSalvo: isSalvo ?? this.isSalvo,
       isLoading: isLoading ?? this.isLoading,
+      leituraCompleta: leituraCompleta ?? this.leituraCompleta,
+      contaCorsanAnterior: contaCorsanAnterior ?? this.contaCorsanAnterior,
+      contaLuzAnterior: contaLuzAnterior ?? this.contaLuzAnterior,
+      configuracaoAnterior: configuracaoAnterior ?? this.configuracaoAnterior,
     );
   }
 

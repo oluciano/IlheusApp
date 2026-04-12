@@ -152,7 +152,50 @@ class OrquestrarFechamentoMensalUseCase {
       final inadimplentesAnterior = await cobrancaRepository
           .buscarInadimplentesAnterior(mesAno);
 
+      // --- Lógica de Redistribuição de Centavos ---
+      // 1. Identificar quem paga (casas ativas e não-isentas)
+      final casasPagantes = casasAtivas.where((c) => !c.isento).toList();
+      final numPagantes = casasPagantes.length;
+
+      if (numPagantes == 0) {
+        throw FechamentoMensalException(
+          erro: ErroFechamento.auditoriaFalhou,
+          mensagem: 'Não há casas pagantes para este mês.',
+        );
+      }
+
+      // 2. Preparar Rateio Equalitário (Luz, Esgoto, ServBasico)
+      // Quota base e resto para distribuir 1 centavo extra
+      final quotaLuz = contaLuz.valorTotal.centavos ~/ numPagantes;
+      final restoLuz = contaLuz.valorTotal.centavos % numPagantes;
+
+      final quotaEsgoto = contaCorsan.valorEsgoto.centavos ~/ numPagantes;
+      final restoEsgoto = contaCorsan.valorEsgoto.centavos % numPagantes;
+
+      final quotaServBasico = contaCorsan.valorServicoBasico.centavos ~/ numPagantes;
+      final restoServBasico = contaCorsan.valorServicoBasico.centavos % numPagantes;
+
+      // 3. Preparar Rateio Proporcional (Água)
+      final consumoTotalCasas = leituras.fold<int>(0, (sum, l) => sum + l.consumoM3);
+      // Denominador para água é o consumo total das casas pagantes (não o geral da CORSAN, 
+      // pois perdas/quiosque são tratados separadamente ou pelo fundo)
+      // NOTA: Se usarmos consumoGeralCorsan como denominador, a soma nunca bateria se houvesse diferença.
+      // Para a auditoria de centavos bater, usamos o consumo somado das casas como base do rateio proporcional.
+      final consumoPagantes = casasPagantes.fold<int>(0, (sum, c) {
+        final l = leituras.firstWhere((l) => l.casaId == c.id);
+        return sum + l.consumoM3;
+      });
+
       final cobrancas = <Cobranca>[];
+      int centavosAguaDistribuidos = 0;
+      int centavosEsgotoDistribuidos = 0;
+      int centavosServDistribuidos = 0;
+      int centavosLuzDistribuidos = 0;
+
+      // Ordenar casas por numero para distribuição de centavos ser determinística (01, 02...)
+      casasAtivas.sort((a, b) => a.numero.compareTo(b.numero));
+
+      int indexPagante = 0;
       for (final casa in casasAtivas) {
         final leitura = leituras.firstWhere(
           (l) => l.casaId == casa.id,
@@ -166,7 +209,8 @@ class OrquestrarFechamentoMensalUseCase {
           casa.id,
         );
 
-        final cobranca = calcularCobrancaUseCase.execute(
+        // Calcula cobrança base
+        var cobranca = calcularCobrancaUseCase.execute(
           casa: casa,
           leitura: leitura,
           contaCorsan: contaCorsan,
@@ -179,7 +223,56 @@ class OrquestrarFechamentoMensalUseCase {
           allLeituras: leituras,
         );
 
+        // Ajusta componentes equalitários com redistribuição de centavos
+        if (!casa.isento) {
+          final extraLuz = indexPagante < restoLuz ? 1 : 0;
+          final extraEsgoto = indexPagante < restoEsgoto ? 1 : 0;
+          final extraServ = indexPagante < restoServBasico ? 1 : 0;
+
+          cobranca = cobranca.copyWith(
+            valorLuz: quotaLuz + extraLuz,
+            valorEsgoto: quotaEsgoto + extraEsgoto,
+            valorServicoBasico: quotaServBasico + extraServ,
+          );
+          
+          centavosLuzDistribuidos += (quotaLuz + extraLuz);
+          centavosEsgotoDistribuidos += (quotaEsgoto + extraEsgoto);
+          centavosServDistribuidos += (quotaServBasico + extraServ);
+          
+          indexPagante++;
+        }
+
         cobrancas.add(cobranca);
+      }
+
+      // 4. Ajuste final do Rateio de Água (Proporcional)
+      // Como a água é proporcional, o floor() acumulado gera uma diferença.
+      // Pegamos a diferença total e aplicamos nas casas com maior consumo.
+      final somaAguaCalculada = cobrancas.fold<int>(0, (sum, c) => sum + c.valorAgua);
+      int diferencaAguaCents = contaCorsan.valorAgua.centavos - somaAguaCalculada;
+      
+      if (diferencaAguaCents > 0) {
+        // Distribui os centavos restantes entre as casas pagantes (1 centavo cada)
+        // até zerar a diferença.
+        for (int i = 0; i < cobrancas.length && diferencaAguaCents > 0; i++) {
+          final casa = casasAtivas.firstWhere((c) => c.id == cobrancas[i].casaId);
+          if (!casa.isento && cobrancas[i].valorAgua > 0) {
+            cobrancas[i] = cobrancas[i].copyWith(
+              valorAgua: cobrancas[i].valorAgua + 1,
+              valorTotal: cobrancas[i].valorTotal + 1,
+            );
+            diferencaAguaCents--;
+          }
+        }
+      }
+
+      // Recalcular totais após ajustes de centavos
+      for (int i = 0; i < cobrancas.length; i++) {
+        final c = cobrancas[i];
+        cobrancas[i] = c.copyWith(
+          valorTotal: c.valorAgua + c.valorEsgoto + c.valorServicoBasico + 
+                      c.valorLuz + c.valorCond + c.valorQuiosque + c.valorJuros,
+        );
       }
 
       // PASSO 3: Fechar fatura
@@ -201,6 +294,9 @@ class OrquestrarFechamentoMensalUseCase {
       }
 
       // PASSO 4: Persistir
+      // Garantir que a fatura rascunho existe no banco antes de salvar cobranças
+      await faturaRepository.salvarFatura(faturaRascunho);
+
       // Injetar faturaId real em cada cobrança antes de persistir
       for (final cobranca in cobrancas) {
         final cobrancaComFatura = cobranca.copyWith(

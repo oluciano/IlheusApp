@@ -4,13 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:ilheus_app/features/agua/presentation/providers/providers.dart';
+import 'package:ilheus_app/features/agua/presentation/widgets/month_year_picker.dart';
 import 'package:ilheus_app/shared/widgets/empty_state.dart';
 
-final mesesSalvosProvider = FutureProvider<List<String>>((ref) async {
-  final repository = ref.watch(aberturaMesRepositoryProvider);
-  if (repository == null) return [];
-  return repository.listarTodosMeses();
-});
+import 'package:ilheus_app/features/agua/domain/models/home_month_overview.dart';
+import 'package:ilheus_app/features/agua/domain/models/status_fatura.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -48,7 +46,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
       body: CustomScrollView(
         slivers: [
           SliverAppBar.large(
-            title: const Text('Condomínio Ilhéu'),
+            title: const Text('Condomínio Ilhéus'),
             actions: [
               IconButton(
                 onPressed: () => ref.invalidate(mesesSalvosProvider),
@@ -59,45 +57,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
             ],
           ),
           
-          // Grid de Métricas (Animated)
+          // Grid de Métricas (Animated Tiles)
           SliverPadding(
             padding: const EdgeInsets.all(16),
-            sliver: SliverToBoxAdapter(
-              child: _StaggeredEntrance(
-                controller: _entranceController,
-                index: 0,
-                child: _buildMetricGrid(context, isDesktop),
-              ),
-            ),
-          ),
-
-          // Gráfico de Consumo (Animated)
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverToBoxAdapter(
-              child: _StaggeredEntrance(
-                controller: _entranceController,
-                index: 1,
-                child: RepaintBoundary(
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Consumo de Água (m³)', style: theme.textTheme.titleMedium),
-                          const SizedBox(height: 24),
-                          const SizedBox(
-                            height: 180,
-                            width: double.infinity,
-                            child: _ConsumptionChart(),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            sliver: mesesAsync.when(
+              data: (meses) => _buildMetricGrid(context, isDesktop, meses),
+              loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
+              error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
             ),
           ),
 
@@ -107,7 +73,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
             sliver: SliverToBoxAdapter(
               child: _StaggeredEntrance(
                 controller: _entranceController,
-                index: 2,
+                index: 1,
                 child: Text(
                   'Gestão de Meses',
                   style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -131,33 +97,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
               return SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, i) {
-                    final mesAno = meses[i];
+                    final overview = meses[i];
+                    final mesAno = overview.mesAno;
+                    
                     return _StaggeredEntrance(
                       controller: _entranceController,
-                      index: 3 + i,
+                      index: 2 + i,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                         child: Card(
                           margin: EdgeInsets.zero,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            side: BorderSide(color: theme.colorScheme.outlineVariant),
-                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          child: ListTile(
-                            leading: Hero(
-                              tag: 'calendar-$mesAno',
-                              child: CircleAvatar(
-                                backgroundColor: theme.colorScheme.primaryContainer,
-                                child: Icon(
-                                  Icons.calendar_today,
-                                  color: theme.colorScheme.onPrimaryContainer,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
-                            title: Text(_nomeMesFormatado(mesAno), style: const TextStyle(fontWeight: FontWeight.w500)),
-                            trailing: const Icon(Icons.chevron_right, size: 20),
+                          child: InkWell(
                             onTap: () async {
                               try {
                                 await ref
@@ -174,6 +129,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                                 }
                               }
                             },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Hero(
+                                        tag: 'calendar-$mesAno',
+                                        child: Container(
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            color: theme.colorScheme.primaryContainer.withOpacity(0.4),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Icon(
+                                            Icons.calendar_today,
+                                            color: theme.colorScheme.primary,
+                                            size: 20,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              _nomeMesFormatado(mesAno),
+                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            _buildStatusBadge(context, overview),
+                                          ],
+                                        ),
+                                      ),
+                                      const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
+                                    ],
+                                  ),
+                                  if (!overview.isFechado) ...[
+                                    const SizedBox(height: 16),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: LinearProgressIndicator(
+                                        value: overview.progresso,
+                                        minHeight: 6,
+                                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                                        color: overview.isCompleto ? Colors.green : theme.colorScheme.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          '${overview.casasLidas}/${overview.totalCasas} casas lidas',
+                                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                        ),
+                                        if (overview.isCompleto)
+                                          const Text(
+                                            'Pronto para fechar',
+                                            style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w500),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -191,9 +215,54 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          ref.invalidate(aberturaMesFormProvider);
-          context.go('/abertura-mes');
+        onPressed: () async {
+          ref.read(aberturaMesFormProvider.notifier).reset();
+          
+          String? sugestao;
+          final meses = mesesAsync.asData?.value;
+          if (meses != null && meses.isNotEmpty) {
+            // Pega o mais recente (já está ordenado)
+            final ultimo = meses.first.mesAno;
+            final partes = ultimo.split('/');
+            int mes = int.parse(partes[0]);
+            int ano = int.parse(partes[1]);
+            if (mes == 12) {
+              mes = 1;
+              ano++;
+            } else {
+              mes++;
+            }
+            sugestao = '${mes.toString().padLeft(2, '0')}/$ano';
+          }
+
+          final mesAno = await MonthYearPickerSheet.show(context, initialMesAno: sugestao);
+          if (mesAno == null || !context.mounted) return;
+
+          final jaExiste = await ref
+              .read(aberturaMesFormProvider.notifier)
+              .mesJaCadastrado(mesAno);
+
+          if (!context.mounted) return;
+
+          if (jaExiste) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'O mês $mesAno já está cadastrado. '
+                  'Selecione-o na lista para editar.',
+                ),
+                backgroundColor: Colors.orange,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          } else {
+            await ref
+                .read(aberturaMesFormProvider.notifier)
+                .abrirNovoMes(mesAno);
+            if (context.mounted) {
+              context.go('/abertura-mes');
+            }
+          }
         },
         icon: const Icon(Icons.add),
         label: const Text('Novo Mês'),
@@ -201,19 +270,97 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildMetricGrid(BuildContext context, bool isDesktop) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: isDesktop ? 3 : 1,
+  Widget _buildMetricGrid(BuildContext context, bool isDesktop, List<HomeMonthOverview> meses) {
+    final abertos = meses.where((m) => !m.isFechado).length;
+
+    return SliverGrid.count(
+      crossAxisCount: isDesktop ? 4 : 2,
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      childAspectRatio: isDesktop ? 2.5 : 3.5,
+      childAspectRatio: 1.1,
       children: [
-        _MetricCard(title: 'Faturas em Aberto', value: '4', icon: Icons.receipt_long, color: Colors.orange, onTap: () {}),
-        _MetricCard(title: 'Próxima Reserva', value: 'Quiosque B', icon: Icons.event, color: Colors.green, onTap: () => context.go('/reservas')),
-        _MetricCard(title: 'Avisos Novos', value: '2', icon: Icons.campaign, color: Colors.purple, onTap: () => context.go('/avisos')),
+        _StaggeredEntrance(
+          controller: _entranceController,
+          index: 0,
+          child: _MetricTile(
+            title: 'Meses em Aberto',
+            value: abertos.toString(),
+            icon: Icons.receipt_long,
+            color: Colors.orange,
+            onTap: () {},
+          ),
+        ),
+        _StaggeredEntrance(
+          controller: _entranceController,
+          index: 1,
+          child: _MetricTile(
+            title: 'Reservas',
+            value: 'Quiosque B',
+            icon: Icons.event,
+            color: Colors.green,
+            onTap: () => context.go('/reservas'),
+          ),
+        ),
+        _StaggeredEntrance(
+          controller: _entranceController,
+          index: 2,
+          child: _MetricTile(
+            title: 'Avisos',
+            value: '2',
+            icon: Icons.campaign,
+            color: Colors.purple,
+            onTap: () => context.go('/avisos'),
+          ),
+        ),
       ],
+    );
+  }
+
+  Widget _buildStatusBadge(BuildContext context, HomeMonthOverview overview) {
+    String text;
+    Color color;
+    IconData icon;
+
+    if (overview.isFechado) {
+      text = 'Fechado';
+      color = Colors.green;
+      icon = Icons.verified;
+    } else if (overview.isCompleto) {
+      text = 'Leitura Completa';
+      color = Colors.blue;
+      icon = Icons.fact_check;
+    } else if (overview.casasLidas > 0) {
+      text = 'Em Leitura';
+      color = Colors.orange;
+      icon = Icons.pending;
+    } else {
+      text = 'Rascunho';
+      color = Colors.grey;
+      icon = Icons.edit_document;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -268,111 +415,71 @@ class _StaggeredEntrance extends StatelessWidget {
   }
 }
 
-class _MetricCard extends StatelessWidget {
+class _MetricTile extends StatelessWidget {
   final String title;
   final String value;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
 
-  const _MetricCard({required this.title, required this.value, required this.icon, required this.color, required this.onTap});
+  const _MetricTile({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
       elevation: 0,
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircleAvatar(
-                backgroundColor: color.withOpacity(0.1),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
                 child: Icon(icon, color: color, size: 20),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                    Text(title, style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                  ],
+              const SizedBox(height: 12),
+              Text(
+                value,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: value.length > 8 ? 14 : 18,
                 ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 10,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
       ),
     );
   }
-}
-
-class _ConsumptionChart extends StatelessWidget {
-  const _ConsumptionChart();
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
-    return CustomPaint(
-      painter: _ChartPainter(
-        data: [8, 12, 10, 15, 11, 14],
-        lineColor: color,
-      ),
-    );
-  }
-}
-
-class _ChartPainter extends CustomPainter {
-  final List<double> data;
-  final Color lineColor;
-
-  _ChartPainter({required this.data, required this.lineColor});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = lineColor
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final double widthBetweenPoints = size.width / (data.length - 1);
-    final double maxData = data.reduce(math.max);
-
-    final path = Path();
-    for (int i = 0; i < data.length; i++) {
-      double x = i * widthBetweenPoints;
-      double y = size.height - (data[i] / maxData * size.height);
-      if (i == 0) path.moveTo(x, y);
-      else path.lineTo(x, y);
-    }
-    canvas.drawPath(path, paint);
-
-    final fillPath = Path.from(path)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-    
-    final fillPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [lineColor.withOpacity(0.2), lineColor.withOpacity(0)],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    
-    canvas.drawPath(fillPath, fillPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

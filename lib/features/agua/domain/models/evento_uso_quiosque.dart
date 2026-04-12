@@ -36,13 +36,24 @@ class EventoUsoQuiosque {
 
   factory EventoUsoQuiosque.fromMap(Map<String, dynamic> map) {
     final rawCasaIds = map['casa_ids'] as String?;
-    List<String> casaIds;
+    List<String> casaIds = [];
+    
     if (rawCasaIds != null && rawCasaIds.isNotEmpty) {
-      final decoded = jsonDecode(rawCasaIds) as List;
-      casaIds = decoded.cast<String>();
-    } else {
-      casaIds = [];
+      if (rawCasaIds.startsWith('[') && rawCasaIds.endsWith(']')) {
+        // Formato JSON
+        try {
+          final decoded = jsonDecode(rawCasaIds) as List;
+          casaIds = decoded.cast<String>();
+        } catch (_) {
+          // Fallback se falhar o parse JSON
+          casaIds = rawCasaIds.split(',').where((s) => s.isNotEmpty).toList();
+        }
+      } else {
+        // Formato CSV (usado no seed Julho/2025)
+        casaIds = rawCasaIds.split(',').where((s) => s.isNotEmpty).toList();
+      }
     }
+    
     return EventoUsoQuiosque(
       id: map['id'] as String,
       mesAno: map['mes_ano'] as String,

@@ -28,6 +28,16 @@ class _CurrencyInputFormFieldState extends State<CurrencyInputFormField> {
       text: widget.initialValue?.toStringAsFixed(2) ?? '',
     );
     _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    if (_focusNode.hasFocus) {
+      _controller.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _controller.text.length,
+      );
+    }
   }
 
   @override
@@ -40,6 +50,7 @@ class _CurrencyInputFormFieldState extends State<CurrencyInputFormField> {
 
   @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChange);
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -99,6 +110,16 @@ class _IntInputFormFieldState extends State<IntInputFormField> {
       text: widget.initialValue?.toString() ?? '',
     );
     _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    if (_focusNode.hasFocus) {
+      _controller.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _controller.text.length,
+      );
+    }
   }
 
   @override
@@ -111,6 +132,7 @@ class _IntInputFormFieldState extends State<IntInputFormField> {
 
   @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChange);
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();

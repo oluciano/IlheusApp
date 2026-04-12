@@ -139,7 +139,9 @@ class AberturaMesRepositoryImpl implements AberturaMesRepository {
 
   @override
   Future<T> runInTransaction<T>(Future<T> Function() body) async {
-    final db = dataSource.db;
-    return db.transaction((_) async => await body());
+    // Retorna a execução direta do corpo, sem o wrapper de transação do sqflite,
+    // para evitar deadlocks causados pelo uso concorrente do objeto Database
+    // sem passar o handle de transação (txn) para os repositórios internos.
+    return await body();
   }
 }

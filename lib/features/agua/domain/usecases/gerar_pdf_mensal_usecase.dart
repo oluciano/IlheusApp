@@ -30,9 +30,13 @@ class ResultadoPdf {
   /// Tamanho do arquivo em bytes.
   final int tamanhoBytes;
 
+  /// Bytes reais do PDF para visualização/compartilhamento imediato.
+  final List<int> pdfBytes;
+
   const ResultadoPdf({
     required this.caminhoArquivo,
     required this.tamanhoBytes,
+    required this.pdfBytes,
   });
 }
 
@@ -148,6 +152,7 @@ class GerarPdfMensalUseCase {
     return ResultadoPdf(
       caminhoArquivo: caminho,
       tamanhoBytes: pdfBytes.length,
+      pdfBytes: pdfBytes,
     );
   }
 
