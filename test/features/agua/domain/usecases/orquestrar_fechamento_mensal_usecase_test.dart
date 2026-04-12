@@ -457,6 +457,8 @@ void main() {
                 inadimplentesAnterior: 0,
                 dataPagamento: null,
                 allLeituras: leituras,
+                qtdCasasPagantes: any(named: 'qtdCasasPagantes'),
+                consumoGeralPagantes: any(named: 'consumoGeralPagantes'),
               )).thenReturn(cobrancas[i]);
         }
 
@@ -592,6 +594,8 @@ void main() {
                 inadimplentesAnterior: 0,
                 dataPagamento: null,
                 allLeituras: leituras,
+                qtdCasasPagantes: any(named: 'qtdCasasPagantes'),
+                consumoGeralPagantes: any(named: 'consumoGeralPagantes'),
               )).thenReturn(cobrancas[i]);
         }
 
@@ -716,6 +720,8 @@ void main() {
                 inadimplentesAnterior: 0,
                 dataPagamento: null,
                 allLeituras: leituras,
+                qtdCasasPagantes: any(named: 'qtdCasasPagantes'),
+                consumoGeralPagantes: any(named: 'consumoGeralPagantes'),
               )).thenReturn(cobrancas[i]);
         }
 
@@ -838,6 +844,8 @@ void main() {
                 inadimplentesAnterior: 0,
                 dataPagamento: null,
                 allLeituras: leituras,
+                qtdCasasPagantes: any(named: 'qtdCasasPagantes'),
+                consumoGeralPagantes: any(named: 'consumoGeralPagantes'),
               )).thenReturn(cobrancas[i]);
         }
 
@@ -901,6 +909,8 @@ void main() {
                 inadimplentesAnterior: 0,
                 dataPagamento: null,
                 allLeituras: leituras,
+                qtdCasasPagantes: any(named: 'qtdCasasPagantes'),
+                consumoGeralPagantes: any(named: 'consumoGeralPagantes'),
               )).called(1);
         }
       });
@@ -992,6 +1002,8 @@ void main() {
                 inadimplentesAnterior: 0,
                 dataPagamento: null,
                 allLeituras: leituras,
+                qtdCasasPagantes: any(named: 'qtdCasasPagantes'),
+                consumoGeralPagantes: any(named: 'consumoGeralPagantes'),
               )).thenReturn(cobrancas[i]);
         }
 
@@ -1053,6 +1065,8 @@ void main() {
               inadimplentesAnterior: 0,
               dataPagamento: null,
               allLeituras: leituras,
+              qtdCasasPagantes: any(named: 'qtdCasasPagantes'),
+              consumoGeralPagantes: any(named: 'consumoGeralPagantes'),
             )).called(1);
       });
     });
@@ -1125,6 +1139,8 @@ void main() {
                 inadimplentesAnterior: 0,
                 dataPagamento: null,
                 allLeituras: leituras,
+                qtdCasasPagantes: any(named: 'qtdCasasPagantes'),
+                consumoGeralPagantes: any(named: 'consumoGeralPagantes'),
               )).thenReturn(cobrancas[i]);
         }
 

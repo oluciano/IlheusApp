@@ -70,18 +70,34 @@ class FechamentoMensalNotifier extends StateNotifier<FechamentoMensalState> {
 
       // PASSO NOVO: Calcular cobranças prévias para exibição na lista
       final cobrancasPrevias = <Cobranca>[];
+
+      // Preparar dados para rateio com isenções
+      final casasPagantes = casas.where((c) => !c.isento).toList();
+      final qtdCasasPagantes = casasPagantes.length;
+      final consumoGeralPagantes = casasPagantes.fold<int>(
+        0,
+        (sum, c) {
+          try {
+            final l = leituras.firstWhere((l) => l.casaId == c.id);
+            return sum + l.consumoM3;
+          } catch (_) {
+            return sum; // Caso não encontre leitura, não soma
+          }
+        },
+      );
+
       for (final casa in casas) {
         final leitura = leituras.firstWhere(
-          (l) => l.casaId == casa.id, 
+          (l) => l.casaId == casa.id,
           orElse: () => Leitura(
             id: _uuid.v4(),
-            casaId: casa.id, 
-            mesAno: mesAno, 
-            leituraAnteriorM3: 0, 
+            casaId: casa.id,
+            mesAno: mesAno,
+            leituraAnteriorM3: 0,
             leituraAtualM3: 0
           ),
         );
-        
+
         final cob = orquestrarUseCase.calcularCobrancaUseCase.execute(
           casa: casa,
           leitura: leitura,
@@ -92,6 +108,8 @@ class FechamentoMensalNotifier extends StateNotifier<FechamentoMensalState> {
           debitosAbertos: [], // Não carregamos débitos na prévia para performance
           inadimplentesAnterior: inadimplentesAnterior,
           allLeituras: leituras,
+          qtdCasasPagantes: qtdCasasPagantes,
+          consumoGeralPagantes: consumoGeralPagantes,
         );
         cobrancasPrevias.add(cob);
       }

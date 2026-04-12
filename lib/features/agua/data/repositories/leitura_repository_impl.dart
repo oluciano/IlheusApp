@@ -64,4 +64,18 @@ class LeituraRepositoryImpl implements LeituraRepository {
     final totalLidas = result.first['total'] as int;
     return totalLidas >= 22;
   }
+
+  @override
+  Future<Leitura?> buscarUltimaLeitura(String casaId) async {
+    final db = dataSource.db;
+    final result = await db.query(
+      'leituras',
+      where: 'casa_id = ?',
+      whereArgs: [casaId],
+      orderBy: 'SUBSTR(mes_ano, 4, 4) DESC, SUBSTR(mes_ano, 1, 2) DESC',
+      limit: 1,
+    );
+    if (result.isEmpty) return null;
+    return Leitura.fromMap(result.first);
+  }
 }

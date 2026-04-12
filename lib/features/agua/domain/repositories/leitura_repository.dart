@@ -5,4 +5,5 @@ abstract class LeituraRepository {
   Future<List<Leitura>> buscarLeiturasPorMes(String mesAno);
   Future<Leitura?> buscarLeituraCasa(String casaId, String mesAno);
   Future<bool> verificarLeituraCompleta(String mesAno);
+  Future<Leitura?> buscarUltimaLeitura(String casaId);
 }

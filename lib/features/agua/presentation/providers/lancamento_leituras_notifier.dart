@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:ilheus_app/features/agua/data/repositories/repository_locator.dart';
 import 'package:ilheus_app/features/agua/domain/models/leitura.dart';
 import 'package:ilheus_app/features/agua/domain/models/casa.dart';
 import 'package:ilheus_app/features/agua/domain/repositories/casa_repository.dart';
@@ -103,18 +102,57 @@ class LancamentoLeiturasNotifier
         return a.numero.compareTo(b.numero);
       });
 
-      // Leituras do mês anterior
+      // Leituras do mês anterior (para exibir "anterior")
+      // Se não existir no mês imediatamente anterior, buscamos a última de qualquer mês
       final mesAnterior = _getMesAnoAnterior();
-      List<Leitura> leiturasAnteriores = [];
-      if (mesAnterior != null) {
-        leiturasAnteriores =
-            await _leituraRepository.buscarLeiturasPorMes(mesAnterior);
+      final List<Leitura> leiturasAnterioresFinal = [];
+      
+      for (final casa in casasResidenciais) {
+        // Tenta primeiro o mês imediatamente anterior
+        Leitura? anterior;
+        if (mesAnterior != null) {
+          anterior = await _leituraRepository.buscarLeituraCasa(casa.id, mesAnterior);
+        }
+        
+        // Se não achou, busca a leitura mais recente de qualquer mês
+        // Mas atenção: se já tivermos leitura para o mês ATUAL, buscarUltimaLeitura
+        // vai retornar ela mesma. Precisamos da última leitura *antes* desta.
+        if (anterior == null) {
+          final ultima = await _leituraRepository.buscarUltimaLeitura(casa.id);
+          if (ultima != null) {
+            // Se a última for deste mês, ela não serve como "anterior"
+            if (ultima.mesAno == mesAno) {
+              // TODO: Se precisarmos mesmo da anterior à atual quando já existe atual,
+              // precisaríamos de um buscarUltimaLeituraAntesDe(mesAno).
+              // Mas para o caso de "lançar novo mês", buscarUltimaLeitura já resolve
+              // pois ainda não existe leitura para o mês atual.
+              
+              // Se já existe leitura no mês atual, a 'leituraAnteriorM3' dela 
+              // JÁ É a leitura que queremos usar como base.
+              final atual = leiturasAtuais.firstWhere((l) => l.casaId == casa.id, orElse: () => ultima);
+              // Criamos uma leitura "fake" do mês anterior usando os dados da atual
+              anterior = Leitura(
+                id: 'fake-prev-${casa.id}',
+                mesAno: 'anterior',
+                casaId: casa.id,
+                leituraAnteriorM3: 0,
+                leituraAtualM3: atual.leituraAnteriorM3,
+              );
+            } else {
+              anterior = ultima;
+            }
+          }
+        }
+        
+        if (anterior != null) {
+          leiturasAnterioresFinal.add(anterior);
+        }
       }
 
       state = state.copyWith(
         casas: casasOrdenadas,
         leiturasSalvas: leiturasAtuais,
-        leiturasMesAnterior: leiturasAnteriores,
+        leiturasMesAnterior: leiturasAnterioresFinal,
         isLoading: false,
       );
     } catch (e) {

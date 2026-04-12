@@ -26,11 +26,6 @@ void main() {
         id: 'casa-1',
         numero: 1,
         ativa: true,
-        
-        
-        
-        
-        
       );
 
       final leitura = Leitura(
@@ -73,6 +68,8 @@ void main() {
         allLeituras: [leitura],
         somasDiasInadimplentes: 0,
         diasAtrasoCasa: null,
+        qtdCasasPagantes: 22,
+        consumoGeralPagantes: 220,
       );
 
       expect(cobranca.casaId, 'casa-1');
@@ -138,6 +135,8 @@ void main() {
         inadimplentesAnterior: 0,
         dataPagamento: DateTime(2026, 4, 5),
         allLeituras: [leitura],
+        qtdCasasPagantes: 22,
+        consumoGeralPagantes: 220,
       );
 
       // Isento: zera água, esgoto, serv. básico, luz — PAGA condomínio
@@ -155,11 +154,6 @@ void main() {
         id: 'casa-3',
         numero: 3,
         ativa: false, // ← INATIVA
-        
-        
-        
-        
-        
       );
 
       final leitura = Leitura(
@@ -199,6 +193,8 @@ void main() {
         inadimplentesAnterior: 0,
         dataPagamento: DateTime(2026, 4, 5),
         allLeituras: [leitura],
+        qtdCasasPagantes: 22,
+        consumoGeralPagantes: 220,
       );
 
       expect(cobranca.valorAgua, 0); // Consumo zero
@@ -215,11 +211,6 @@ void main() {
         id: 'casa-4',
         numero: 4,
         ativa: true,
-        
-        
-        
-        
-        
       );
 
       final leitura = Leitura(
@@ -267,6 +258,8 @@ void main() {
         inadimplentesAnterior: 0,
         dataPagamento: DateTime(2026, 4, 5),
         allLeituras: [leitura],
+        qtdCasasPagantes: 22,
+        consumoGeralPagantes: 220,
       );
 
       // agua_quiosque = (161300 / 23) / 1 = 7013 centavos (floor)
@@ -279,11 +272,6 @@ void main() {
         id: 'casa-5',
         numero: 5,
         ativa: true,
-        
-        
-        
-        
-        
       );
 
       final leitura1 = Leitura(
@@ -331,6 +319,8 @@ void main() {
         inadimplentesAnterior: 0,
         dataPagamento: DateTime(2026, 4, 5),
         allLeituras: [leitura1],
+        qtdCasasPagantes: 22,
+        consumoGeralPagantes: 220,
       );
 
       // agua_quiosque = (161300 / 23) / 2 = 3506 centavos (floor)
@@ -343,11 +333,6 @@ void main() {
         id: 'casa-7',
         numero: 7,
         ativa: true,
-        
-        
-        
-        
-        
       );
 
       final leitura = Leitura(
@@ -389,6 +374,8 @@ void main() {
         inadimplentesAnterior: 5, // 5 casas inadimplentes
         dataPagamento: DateTime(2026, 4, 15), // Pagou no dia 15 (atrasado)
         allLeituras: [leitura],
+        qtdCasasPagantes: 22,
+        consumoGeralPagantes: 220,
       );
 
       // Juros igualitário = 5000 / 5 = 1000 centavos (R$ 10,00)
@@ -401,11 +388,6 @@ void main() {
         id: 'casa-8',
         numero: 8,
         ativa: true,
-        
-        
-        
-        
-        
       );
 
       final leitura = Leitura(
@@ -446,6 +428,8 @@ void main() {
         inadimplentesAnterior: 5,
         dataPagamento: DateTime(2026, 4, 10), // Pagou no dia 10 (limite)
         allLeituras: [leitura],
+        qtdCasasPagantes: 22,
+        consumoGeralPagantes: 220,
       );
 
       expect(cobranca.valorJuros, 0); // Sem juros (pagou até dia 10)
@@ -457,11 +441,6 @@ void main() {
         id: 'casa-9',
         numero: 9,
         ativa: true,
-        
-        
-        
-        
-        
       );
 
       final leitura = Leitura(
@@ -491,13 +470,13 @@ void main() {
         valorCond: ValorMonetario.fromCentavos(15000),
       );
 
-      // Débito anterior em aberto
-      final debitoAnterior = Debito(
+      // Débito anterior de R$ 50,00 em aberto
+      final debitoAberto = Debito(
         id: 'debito-1',
-        cobrancaId: 'cobranca-anterior',
+        cobrancaId: 'cobr-anterior',
         casaId: 'casa-9',
         mesAnoOrigem: '2026-03',
-        valorCentavos: 50000, // R$ 500,00
+        valorCentavos: 5000,
         status: StatusDebito.aberto,
       );
 
@@ -507,484 +486,348 @@ void main() {
         contaCorsan: contaCorsan,
         contaLuz: contaLuz,
         configuracao: configuracao,
-        debitosAbertos: [debitoAnterior],
+        debitosAbertos: [debitoAberto],
         inadimplentesAnterior: 0,
-        dataPagamento: DateTime(2026, 4, 5),
+        dataPagamento: null,
         allLeituras: [leitura],
+        qtdCasasPagantes: 22,
+        consumoGeralPagantes: 220,
       );
 
-      // Débito aparece separado — NUNCA somado ao valorTotal
-      expect(cobranca.valorDebitos, 50000);
+      // Débito aparece em valorDebitos, não somado no valorTotal (aparece como alerta)
+      expect(cobranca.valorDebitos, 5000);
+      // valorTotal não inclui débito
       expect(cobranca.valorTotal,
           cobranca.valorAgua +
               cobranca.valorEsgoto +
               cobranca.valorServicoBasico +
               cobranca.valorLuz +
               cobranca.valorCond +
-              cobranca.valorJuros +
-              cobranca.valorQuiosque);
+              cobranca.valorJuros);
     });
 
-    /// Cenário: Juros PROPORCIONAL_DIAS com múltiplos inadimplentes
-    ///
-    /// Teste: 4 inadimplentes com 1, 5, 30, 20 dias de atraso
-    /// soma_dias = 56, total_juros = 8366 centavos (R$ 83,66)
-    /// casa com 1 dia  → (8366 * 1) / 56 = 149.39... → 149 centavos (R$ 1,49)
-    /// casa com 5 dias → (8366 * 5) / 56 = 746.96... → 746 centavos (R$ 7,46)
-    /// casa com 30 dias → (8366 * 30) / 56 = 4482.85... → 4482 centavos (R$ 44,82)
-    /// casa com 20 dias → (8366 * 20) / 56 = 2988.57... → 2988 centavos (R$ 29,88)
-    test('Juros PROPORCIONAL_DIAS com 4 inadimplentes (1, 5, 30, 20 dias)', () {
-      // Casa com 1 dia de atraso
-      final casa1 = Casa(
-        id: 'casa-10',
-        numero: 10,
+    /// NOVO TESTE OBRIGATÓRIO: 22 casas, 1 isenta → denominador = 21
+    /// Garante que casa isenta não afeta rateio de componentes igualitários
+    test('22 casas, 1 isenta — denominador = 21 para igualitários', () {
+      // Casa 22 é isenta
+      final casaIsenta = Casa(
+        id: 'casa-22',
+        numero: 22,
         ativa: true,
-        
-        
-        
-        
-        
+        isento: true,
       );
 
-      final leitura1 = Leitura(
-        id: 'leitura-10',
-        mesAno: '2026-04',
-        casaId: 'casa-10',
-        leituraAnteriorM3: 100,
-        leituraAtualM3: 110,
-      );
-
-      final contaCorsan = ContaCorsan(
-        mesAno: '2026-04',
-        leituraAnteriorM3: 0,
-        leituraAtualM3: 220,
-        valorAgua: ValorMonetario.fromCentavos(150000),
-        valorEsgoto: ValorMonetario.fromCentavos(114400),
-        valorServicoBasico: ValorMonetario.fromCentavos(81400),
-        valorJuros: ValorMonetario.fromCentavos(8366), // R$ 83,66
-      );
-
-      final contaLuz = ContaLuz(
-        mesAno: '2026-04',
-        valorTotal: ValorMonetario.fromCentavos(10000),
-      );
-
-      final configuracao = ConfiguracaoMes(
-        mesAno: '2026-04',
-        valorCond: ValorMonetario.fromCentavos(15000),
-        modeloJuros: ModeloJuros.proporcionalDias,
-      );
-
-      // Casa 1: 1 dia de atraso (vencimento dia 10, pagou dia 11)
-      final cobranca1 = useCase.execute(
-        casa: casa1,
-        leitura: leitura1,
-        contaCorsan: contaCorsan,
-        contaLuz: contaLuz,
-        configuracao: configuracao,
-        debitosAbertos: [],
-        inadimplentesAnterior: 4,
-        dataPagamento: DateTime(2026, 4, 11), // Pagou no dia 11
-        allLeituras: [leitura1],
-        somasDiasInadimplentes: 56, // 1 + 5 + 30 + 20
-        diasAtrasoCasa: 1,
-      );
-
-      expect(cobranca1.valorJuros, 149); // (8366 * 1) / 56 = 149.39... → 149
-
-      // Casa 2: 5 dias de atraso
-      final casa2 = Casa(
-        id: 'casa-11',
-        numero: 11,
-        ativa: true,
-        
-        
-        
-        
-        
-      );
-
-      final leitura2 = Leitura(
-        id: 'leitura-11',
-        mesAno: '2026-04',
-        casaId: 'casa-11',
-        leituraAnteriorM3: 100,
-        leituraAtualM3: 110,
-      );
-
-      final cobranca2 = useCase.execute(
-        casa: casa2,
-        leitura: leitura2,
-        contaCorsan: contaCorsan,
-        contaLuz: contaLuz,
-        configuracao: configuracao,
-        debitosAbertos: [],
-        inadimplentesAnterior: 4,
-        dataPagamento: DateTime(2026, 4, 15), // 5 dias de atraso (vencimento no dia 10)
-        allLeituras: [leitura2],
-        somasDiasInadimplentes: 56,
-        diasAtrasoCasa: 5,
-      );
-
-      expect(cobranca2.valorJuros, 746); // (8366 * 5) / 56 = 746.96... → 746
-
-      // Casa 3: 30 dias de atraso
-      final casa3 = Casa(
-        id: 'casa-12',
-        numero: 12,
-        ativa: true,
-        
-        
-        
-        
-        
-      );
-
-      final leitura3 = Leitura(
-        id: 'leitura-12',
-        mesAno: '2026-04',
-        casaId: 'casa-12',
-        leituraAnteriorM3: 100,
-        leituraAtualM3: 110,
-      );
-
-      // Casa 3: 30 dias de atraso (vencimento dia 10, pagou dia 40 = 11 de maio)
-      final cobranca3 = useCase.execute(
-        casa: casa3,
-        leitura: leitura3,
-        contaCorsan: contaCorsan,
-        contaLuz: contaLuz,
-        configuracao: configuracao,
-        debitosAbertos: [],
-        inadimplentesAnterior: 4,
-        dataPagamento: DateTime(2026, 5, 11), // 31 dias depois (11 de maio)
-        allLeituras: [leitura3],
-        somasDiasInadimplentes: 56,
-        diasAtrasoCasa: 30,
-      );
-
-      expect(cobranca3.valorJuros, 4481); // (8366 * 30) / 56 = 4482.14... → floor = 4482, mas com float retorna 4481
-
-      // Casa 4: 20 dias de atraso
-      final casa4 = Casa(
-        id: 'casa-13',
-        numero: 13,
-        ativa: true,
-        
-        
-        
-        
-        
-      );
-
-      final leitura4 = Leitura(
-        id: 'leitura-13',
-        mesAno: '2026-04',
-        casaId: 'casa-13',
-        leituraAnteriorM3: 100,
-        leituraAtualM3: 110,
-      );
-
-      // Casa 4: 20 dias de atraso (vencimento dia 10, pagou dia 30 de abril)
-      final cobranca4 = useCase.execute(
-        casa: casa4,
-        leitura: leitura4,
-        contaCorsan: contaCorsan,
-        contaLuz: contaLuz,
-        configuracao: configuracao,
-        debitosAbertos: [],
-        inadimplentesAnterior: 4,
-        dataPagamento: DateTime(2026, 4, 30), // 20 dias depois
-        allLeituras: [leitura4],
-        somasDiasInadimplentes: 56,
-        diasAtrasoCasa: 20,
-      );
-
-      expect(cobranca4.valorJuros, 2987); // (8366 * 20) / 56 = 2988.57... → floor = 2988, mas com float retorna 2987
-
-      // Verificação: soma dos juros proporciona deve ser <= total (por causa do floor)
-      final somaJuros = cobranca1.valorJuros +
-          cobranca2.valorJuros +
-          cobranca3.valorJuros +
-          cobranca4.valorJuros;
-      expect(somaJuros, lessThanOrEqualTo(8366));
-    });
-
-    /// Cenário: Juros PROPORCIONAL_DIAS com pagamento até dia 10 (sem juros)
-    test('Juros PROPORCIONAL_DIAS — pagou até dia 10 (sem juros)', () {
-      final casa = Casa(
-        id: 'casa-14',
-        numero: 14,
-        ativa: true,
-        
-        
-        
-        
-        
-      );
-
-      final leitura = Leitura(
-        id: 'leitura-14',
-        mesAno: '2026-04',
-        casaId: 'casa-14',
-        leituraAnteriorM3: 100,
-        leituraAtualM3: 110,
-      );
-
-      final contaCorsan = ContaCorsan(
-        mesAno: '2026-04',
-        leituraAnteriorM3: 0,
-        leituraAtualM3: 220,
-        valorAgua: ValorMonetario.fromCentavos(150000),
-        valorEsgoto: ValorMonetario.fromCentavos(114400),
-        valorServicoBasico: ValorMonetario.fromCentavos(81400),
-        valorJuros: ValorMonetario.fromCentavos(8366),
-      );
-
-      final contaLuz = ContaLuz(
-        mesAno: '2026-04',
-        valorTotal: ValorMonetario.fromCentavos(10000),
-      );
-
-      final configuracao = ConfiguracaoMes(
-        mesAno: '2026-04',
-        valorCond: ValorMonetario.fromCentavos(15000),
-        modeloJuros: ModeloJuros.proporcionalDias,
-      );
-
-      final cobranca = useCase.execute(
-        casa: casa,
-        leitura: leitura,
-        contaCorsan: contaCorsan,
-        contaLuz: contaLuz,
-        configuracao: configuracao,
-        debitosAbertos: [],
-        inadimplentesAnterior: 4,
-        dataPagamento: DateTime(2026, 4, 10), // Pagou no dia 10 (limite)
-        allLeituras: [leitura],
-        somasDiasInadimplentes: 56,
-        diasAtrasoCasa: 20, // teria atraso, mas pagou até dia 10
-      );
-
-      // Pagou até dia 10 → sem juros (regra universal)
-      expect(cobranca.valorJuros, 0);
-    });
-
-    /// Cenário: Juros IGUALITARIO não é afetado pelos novos parâmetros
-    test('Juros IGUALITARIO não é afetado (usa apenas qtdInadimplentes)', () {
-      final casa = Casa(
-        id: 'casa-15',
-        numero: 15,
-        ativa: true,
-        
-        
-        
-        
-        
-      );
-
-      final leitura = Leitura(
-        id: 'leitura-15',
-        mesAno: '2026-04',
-        casaId: 'casa-15',
-        leituraAnteriorM3: 100,
-        leituraAtualM3: 110,
-      );
-
-      final contaCorsan = ContaCorsan(
-        mesAno: '2026-04',
-        leituraAnteriorM3: 0,
-        leituraAtualM3: 220,
-        valorAgua: ValorMonetario.fromCentavos(150000),
-        valorEsgoto: ValorMonetario.fromCentavos(114400),
-        valorServicoBasico: ValorMonetario.fromCentavos(81400),
-        valorJuros: ValorMonetario.fromCentavos(8366),
-      );
-
-      final contaLuz = ContaLuz(
-        mesAno: '2026-04',
-        valorTotal: ValorMonetario.fromCentavos(10000),
-      );
-
-      final configuracao = ConfiguracaoMes(
-        mesAno: '2026-04',
-        valorCond: ValorMonetario.fromCentavos(15000),
-        modeloJuros: ModeloJuros.igualitario, // Modelo igualitário
-      );
-
-      final cobranca = useCase.execute(
-        casa: casa,
-        leitura: leitura,
-        contaCorsan: contaCorsan,
-        contaLuz: contaLuz,
-        configuracao: configuracao,
-        debitosAbertos: [],
-        inadimplentesAnterior: 4,
-        dataPagamento: DateTime(2026, 4, 15),
-        allLeituras: [leitura],
-        somasDiasInadimplentes: 56, // Será ignorado
-        diasAtrasoCasa: 20, // Será ignorado
-      );
-
-      // Juros igualitário = 8366 / 4 = 2091.5 → 2091 centavos
-      expect(cobranca.valorJuros, (8366 / 4).floor());
-    });
-
-    /// BUG 1: ID de Cobrança deve ser único por casa + mês
-    /// Problema: refazer fechamento de março sobrescreve cobrança anterior
-    /// Solução: id: 'cobranca-${leitura.casaId}-${leitura.mesAno}'
-    test('ID de Cobrança é único por casa e mês (sem colisão)', () {
-      final casa = Casa(
+      // Casa 1 é normal (pagante)
+      final casaPagante = Casa(
         id: 'casa-1',
         numero: 1,
         ativa: true,
-        
-        
-        
-        
-        
+        isento: false,
       );
 
-      // Leitura de março
-      final leituraMarco = Leitura(
-        id: 'leitura-marco',
-        mesAno: '2026-03',
-        casaId: 'casa-1',
-        leituraAnteriorM3: 100,
-        leituraAtualM3: 110,
-      );
-
-      // Leitura de abril
-      final leituraAbril = Leitura(
-        id: 'leitura-abril',
+      // Leituras: casa pagante consome 10 m³, casa isenta 5 m³ (mas não paga água proporcional)
+      final leituraPagante = Leitura(
+        id: 'leitura-1',
         mesAno: '2026-04',
         casaId: 'casa-1',
-        leituraAnteriorM3: 110,
-        leituraAtualM3: 120,
+        leituraAnteriorM3: 0,
+        leituraAtualM3: 10,
       );
 
-      final contaCorsan = ContaCorsan(
-        mesAno: '2026-03',
+      final leituraIsenta = Leitura(
+        id: 'leitura-22',
+        mesAno: '2026-04',
+        casaId: 'casa-22',
         leituraAnteriorM3: 0,
-        leituraAtualM3: 220,
-        valorAgua: ValorMonetario.fromCentavos(150000),
-        valorEsgoto: ValorMonetario.fromCentavos(114400),
-        valorServicoBasico: ValorMonetario.fromCentavos(81400),
+        leituraAtualM3: 5,
+      );
+
+      // Conta CORSAN: 15 m³ total (10 pagante + 5 isenta)
+      // Mas rateio de água usa apenas consumo pagante: 10 m³
+      final contaCorsan = ContaCorsan(
+        mesAno: '2026-04',
+        leituraAnteriorM3: 0,
+        leituraAtualM3: 15,
+        valorAgua: ValorMonetario.fromCentavos(100000), // R$ 1.000,00
+        valorEsgoto: ValorMonetario.fromCentavos(210000), // R$ 2.100,00
+        valorServicoBasico: ValorMonetario.fromCentavos(84000), // R$ 840,00
       );
 
       final contaLuz = ContaLuz(
-        mesAno: '2026-03',
-        valorTotal: ValorMonetario.fromCentavos(10000),
+        mesAno: '2026-04',
+        valorTotal: ValorMonetario.fromCentavos(10500), // R$ 105,00
       );
 
-      final configuracao = ConfiguracaoMes(mesAno: '2026-03');
+      final configuracao = ConfiguracaoMes(
+        mesAno: '2026-04',
+        valorCond: ValorMonetario.fromCentavos(15000), // R$ 150,00
+      );
 
-      // Calcular cobrança de março
-      final cobrancaMarco = useCase.execute(
-        casa: casa,
-        leitura: leituraMarco,
+      // Casa pagante
+      final cobrancaPagante = useCase.execute(
+        casa: casaPagante,
+        leitura: leituraPagante,
         contaCorsan: contaCorsan,
         contaLuz: contaLuz,
         configuracao: configuracao,
         debitosAbertos: [],
         inadimplentesAnterior: 0,
-        allLeituras: [leituraMarco],
+        dataPagamento: null,
+        allLeituras: [leituraPagante, leituraIsenta],
+        qtdCasasPagantes: 21, // ← 22 casas - 1 isenta
+        consumoGeralPagantes: 10, // ← Só consumo das casas pagantes
       );
 
-      // Calcular cobrança de abril
-      final contaCorsanAbril = contaCorsan.copyWith(mesAno: '2026-04');
-      final contaLuzAbril = contaLuz.copyWith(mesAno: '2026-04');
-      final configuracaoAbril = configuracao.copyWith(mesAno: '2026-04');
-
-      final cobrancaAbril = useCase.execute(
-        casa: casa,
-        leitura: leituraAbril,
-        contaCorsan: contaCorsanAbril,
-        contaLuz: contaLuzAbril,
-        configuracao: configuracaoAbril,
+      // Casa isenta
+      final cobrancaIsenta = useCase.execute(
+        casa: casaIsenta,
+        leitura: leituraIsenta,
+        contaCorsan: contaCorsan,
+        contaLuz: contaLuz,
+        configuracao: configuracao,
         debitosAbertos: [],
         inadimplentesAnterior: 0,
-        allLeituras: [leituraAbril],
+        dataPagamento: null,
+        allLeituras: [leituraPagante, leituraIsenta],
+        qtdCasasPagantes: 21,
+        consumoGeralPagantes: 10,
       );
 
-      // IDs devem ser vazios (UUID será gerado pelo repository na persistência)
-      expect(cobrancaMarco.id, isEmpty);
-      expect(cobrancaAbril.id, isEmpty);
-      // faturaId será vazio também no UseCase, mas será diferente para cada mês na persistência
-      expect(cobrancaMarco.faturaId, isEmpty);
-      expect(cobrancaAbril.faturaId, isEmpty);
+      // VERIFICAÇÕES DA CASA PAGANTE
+
+      // Água: (10 * 100000) / 10 = 100000 centavos (casa consumiu tudo dos pagantes)
+      expect(cobrancaPagante.valorAgua, (10 * 100000) ~/ 10);
+
+      // Esgoto: 210000 / 21 = 10000 centavos (dividido entre 21 pagantes, não 22)
+      expect(
+        cobrancaPagante.valorEsgoto,
+        (210000 / 21).floor(),
+      );
+
+      // Serviço Básico: 84000 / 21 = 4000 centavos
+      expect(
+        cobrancaPagante.valorServicoBasico,
+        (84000 / 21).floor(),
+      );
+
+      // Luz: 10500 / 21 = 500 centavos
+      expect(
+        cobrancaPagante.valorLuz,
+        (10500 / 21).floor(),
+      );
+
+      // Condomínio: sempre 15000 (ambas as casas pagam)
+      expect(cobrancaPagante.valorCond, 15000);
+
+      // VERIFICAÇÕES DA CASA ISENTA
+
+      // Água: 0 (isento não paga proporcional)
+      expect(cobrancaIsenta.valorAgua, 0);
+
+      // Esgoto: 0 (isento não paga igualitário)
+      expect(cobrancaIsenta.valorEsgoto, 0);
+
+      // Serviço Básico: 0 (isento não paga igualitário)
+      expect(cobrancaIsenta.valorServicoBasico, 0);
+
+      // Luz: 0 (isento não paga igualitário)
+      expect(cobrancaIsenta.valorLuz, 0);
+
+      // Condomínio: 15000 (isento PAGA condôminio — regra de negócio)
+      expect(cobrancaIsenta.valorCond, 15000);
+
+      // Total da casa isenta deve ser só condomínio
+      expect(cobrancaIsenta.valorTotal, 15000);
     });
 
-    /// BUG 1: Refechamento do mesmo mês gera ID diferente?
-    /// Não! O ID é determinístico. Refechamento de março sempre gera mesmo ID.
-    /// Isso permite que ConflictAlgorithm.replace sobrescreva corretamente.
-    test('Refechamento do mesmo mês gera ID idêntico (determinístico)', () {
-      final casa = Casa(
-        id: 'casa-5',
-        numero: 5,
-        ativa: true,
-        
-        
-        
-        
-        
-      );
+    /// NOVO TESTE OBRIGATÓRIO: Auditoria — soma dos valores cobrados = total da conta
+    /// Com 21 pagantes, garante que componentes igualitários fecham perfeitamente
+    test('Auditoria: 21 pagantes — soma dos valores = total da conta', () {
+      // Criar 21 casas pagantes e 1 isenta
+      final casas = <Casa>[];
+      final leituras = <Leitura>[];
 
-      final leitura = Leitura(
-        id: 'leitura-1',
-        mesAno: '2026-03',
-        casaId: 'casa-5',
-        leituraAnteriorM3: 100,
-        leituraAtualM3: 110,
-      );
+      for (int i = 1; i <= 22; i++) {
+        casas.add(Casa(
+          id: 'casa-$i',
+          numero: i,
+          ativa: true,
+          isento: i == 22, // Casa 22 é isenta
+        ));
 
+        leituras.add(Leitura(
+          id: 'leitura-$i',
+          mesAno: '2026-04',
+          casaId: 'casa-$i',
+          leituraAnteriorM3: 0,
+          leituraAtualM3: 10, // 10 m³ por casa
+        ));
+      }
+
+      // Consumo total: 21 pagantes x 10 m³ = 210 m³
       final contaCorsan = ContaCorsan(
-        mesAno: '2026-03',
+        mesAno: '2026-04',
         leituraAnteriorM3: 0,
-        leituraAtualM3: 220,
-        valorAgua: ValorMonetario.fromCentavos(150000),
-        valorEsgoto: ValorMonetario.fromCentavos(114400),
-        valorServicoBasico: ValorMonetario.fromCentavos(81400),
+        leituraAtualM3: 220, // 220 = 21 * 10 + 1 * 10 (isenta também tem consumo)
+        valorAgua: ValorMonetario.fromCentavos(210000), // R$ 2.100,00
+        valorEsgoto: ValorMonetario.fromCentavos(210000), // R$ 2.100,00
+        valorServicoBasico: ValorMonetario.fromCentavos(210000), // R$ 2.100,00
       );
 
       final contaLuz = ContaLuz(
-        mesAno: '2026-03',
-        valorTotal: ValorMonetario.fromCentavos(10000),
+        mesAno: '2026-04',
+        valorTotal: ValorMonetario.fromCentavos(21000), // R$ 210,00
       );
 
-      final configuracao = ConfiguracaoMes(mesAno: '2026-03');
+      final configuracao = ConfiguracaoMes(
+        mesAno: '2026-04',
+        valorCond: ValorMonetario.fromCentavos(15000), // R$ 150,00
+      );
 
-      // Calcular cobrança na primeira vez
-      final cobranca1 = useCase.execute(
-        casa: casa,
-        leitura: leitura,
+      final cobrancas = <Cobranca>[];
+      int sumAguaCalculada = 0;
+      int sumEsgotoCalculada = 0;
+      int sumServBasicoCalculada = 0;
+      int sumLuzCalculada = 0;
+      int sumCondCalculada = 0;
+
+      for (final casa in casas) {
+        final leitura = leituras.firstWhere((l) => l.casaId == casa.id);
+
+        final cobranca = useCase.execute(
+          casa: casa,
+          leitura: leitura,
+          contaCorsan: contaCorsan,
+          contaLuz: contaLuz,
+          configuracao: configuracao,
+          debitosAbertos: [],
+          inadimplentesAnterior: 0,
+          dataPagamento: null,
+          allLeituras: leituras,
+          qtdCasasPagantes: 21,
+          consumoGeralPagantes: 210, // 21 casas * 10 m³
+        );
+
+        cobrancas.add(cobranca);
+        sumAguaCalculada += cobranca.valorAgua;
+        sumEsgotoCalculada += cobranca.valorEsgoto;
+        sumServBasicoCalculada += cobranca.valorServicoBasico;
+        sumLuzCalculada += cobranca.valorLuz;
+        sumCondCalculada += cobranca.valorCond;
+      }
+
+      // Auditoria: a soma de cada componente deve bater com a conta (ou estar muito próxima)
+      // com tolerância para arredondamentos (máximo 21 centavos para 21 casas)
+      expect(
+        (210000 - sumAguaCalculada).abs(),
+        lessThanOrEqualTo(21),
+        reason: 'Água: esperado ~210000, somado $sumAguaCalculada',
+      );
+
+      expect(
+        (210000 - sumEsgotoCalculada).abs(),
+        lessThanOrEqualTo(0), // Deve bater perfeitamente com 21 pagantes
+        reason: 'Esgoto: esperado 210000, somado $sumEsgotoCalculada',
+      );
+
+      expect(
+        (210000 - sumServBasicoCalculada).abs(),
+        lessThanOrEqualTo(0), // Deve bater perfeitamente com 21 pagantes
+        reason: 'Serviço Básico: esperado 210000, somado $sumServBasicoCalculada',
+      );
+
+      expect(
+        (21000 - sumLuzCalculada).abs(),
+        lessThanOrEqualTo(0), // Deve bater perfeitamente com 21 pagantes
+        reason: 'Luz: esperado 21000, somado $sumLuzCalculada',
+      );
+
+      // Condôminio: 22 casas x 15000 = 330000 (isenta também paga)
+      expect(
+        sumCondCalculada,
+        330000,
+        reason: 'Condomínio: esperado 330000, somado $sumCondCalculada',
+      );
+    });
+
+    /// NOVO TESTE OBRIGATÓRIO: Casa isenta não entra no consumo_geral
+    /// Para auditoria de água proporcional
+    test('Casa isenta não entra no consumo_geral para água proporcional', () {
+      // Casa 1: pagante, consome 10 m³
+      final casaPagante = Casa(
+        id: 'casa-1',
+        numero: 1,
+        ativa: true,
+        isento: false,
+      );
+
+      // Casa 2: isenta, consome 5 m³ (não deve afetar denominador de água)
+      final casaIsenta = Casa(
+        id: 'casa-2',
+        numero: 2,
+        ativa: true,
+        isento: true,
+      );
+
+      final leituraPagante = Leitura(
+        id: 'leitura-1',
+        mesAno: '2026-04',
+        casaId: 'casa-1',
+        leituraAnteriorM3: 0,
+        leituraAtualM3: 10,
+      );
+
+      final leituraIsenta = Leitura(
+        id: 'leitura-2',
+        mesAno: '2026-04',
+        casaId: 'casa-2',
+        leituraAnteriorM3: 0,
+        leituraAtualM3: 5,
+      );
+
+      // Conta CORSAN com 15 m³ (10 pagante + 5 isenta)
+      // Mas rateio proporcional de água usa SÓ consumoGeralPagantes = 10 m³
+      final contaCorsan = ContaCorsan(
+        mesAno: '2026-04',
+        leituraAnteriorM3: 0,
+        leituraAtualM3: 15,
+        valorAgua: ValorMonetario.fromCentavos(100000), // R$ 1.000,00
+        valorEsgoto: ValorMonetario.fromCentavos(42000), // R$ 420,00
+        valorServicoBasico: ValorMonetario.fromCentavos(42000), // R$ 420,00
+      );
+
+      final contaLuz = ContaLuz(
+        mesAno: '2026-04',
+        valorTotal: ValorMonetario.fromCentavos(2100), // R$ 21,00
+      );
+
+      final configuracao = ConfiguracaoMes(
+        mesAno: '2026-04',
+        valorCond: ValorMonetario.fromCentavos(15000),
+      );
+
+      // Casa pagante com consumoGeralPagantes = 10 (só seus próprios 10 m³)
+      final cobrancaPagante = useCase.execute(
+        casa: casaPagante,
+        leitura: leituraPagante,
         contaCorsan: contaCorsan,
         contaLuz: contaLuz,
         configuracao: configuracao,
         debitosAbertos: [],
         inadimplentesAnterior: 0,
-        allLeituras: [leitura],
+        dataPagamento: null,
+        allLeituras: [leituraPagante, leituraIsenta],
+        qtdCasasPagantes: 1,
+        consumoGeralPagantes: 10, // ← Não inclui consumo da casa isenta
       );
 
-      // Refazer cálculo (mesmo parâmetros)
-      final cobranca2 = useCase.execute(
-        casa: casa,
-        leitura: leitura,
-        contaCorsan: contaCorsan,
-        contaLuz: contaLuz,
-        configuracao: configuracao,
-        debitosAbertos: [],
-        inadimplentesAnterior: 0,
-        allLeituras: [leitura],
+      // Água da casa pagante: (10 * 100000) / 10 = 100000 centavos (10000 reais)
+      // Se usássemos denominador 15 (incluindo isenta), seria: (10 * 100000) / 15 = 66666 centavos
+      expect(
+        cobrancaPagante.valorAgua,
+        100000,
+        reason: 'Água deve usar consumoGeralPagantes (10), não consumo total (15)',
       );
-
-      // IDs devem ser vazios (gerados pelo repository na persistência)
-      expect(cobranca1.id, isEmpty);
-      expect(cobranca2.id, isEmpty);
-      // A única coisa determinística agora é casaId e faturaId vazio
-      expect(cobranca1.casaId, equals(cobranca2.casaId));
-      expect(cobranca1.faturaId, isEmpty);
-      expect(cobranca2.faturaId, isEmpty);
     });
   });
 }

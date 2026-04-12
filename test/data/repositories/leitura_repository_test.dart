@@ -167,5 +167,52 @@ void main() {
         expect(completa, isFalse);
       });
     });
+
+    group('buscarUltimaLeitura', () {
+      test('chama query com ordenação temporal correta', () async {
+        final rows = [
+          {
+            'id': 'l-old',
+            'mes_ano': '12/2025',
+            'casa_id': casaId,
+            'leitura_anterior_m3': 100,
+            'leitura_atual_m3': 110,
+          },
+        ];
+
+        when(() => db.query(
+              'leituras',
+              where: any(named: 'where'),
+              whereArgs: any(named: 'whereArgs'),
+              orderBy: 'SUBSTR(mes_ano, 4, 4) DESC, SUBSTR(mes_ano, 1, 2) DESC',
+              limit: 1,
+            )).thenAnswer((_) async => rows);
+
+        final result = await repository.buscarUltimaLeitura(casaId);
+
+        expect(result, isNotNull);
+        expect(result!.mesAno, '12/2025');
+        verify(() => db.query(
+              'leituras',
+              where: 'casa_id = ?',
+              whereArgs: [casaId],
+              orderBy: 'SUBSTR(mes_ano, 4, 4) DESC, SUBSTR(mes_ano, 1, 2) DESC',
+              limit: 1,
+            )).called(1);
+      });
+
+      test('retorna null quando não há leituras', () async {
+        when(() => db.query(
+              'leituras',
+              where: any(named: 'where'),
+              whereArgs: any(named: 'whereArgs'),
+              orderBy: any(named: 'orderBy'),
+              limit: any(named: 'limit'),
+            )).thenAnswer((_) async => []);
+
+        final result = await repository.buscarUltimaLeitura(casaId);
+        expect(result, isNull);
+      });
+    });
   });
 }

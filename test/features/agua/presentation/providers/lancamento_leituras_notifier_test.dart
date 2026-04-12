@@ -161,8 +161,10 @@ void main() {
       when(() => casaRepo.buscarAtivas()).thenAnswer((_) async => casas);
       when(() => leituraRepo.buscarLeiturasPorMes('04/2026'))
           .thenAnswer((_) async => []);
-      when(() => leituraRepo.buscarLeiturasPorMes('03/2026'))
-          .thenAnswer((_) async => []);
+      when(() => leituraRepo.buscarLeituraCasa(any(), any()))
+          .thenAnswer((_) async => null);
+      when(() => leituraRepo.buscarUltimaLeitura(any()))
+          .thenAnswer((_) async => null);
 
       await notifier.carregarDados();
 
@@ -170,6 +172,7 @@ void main() {
       expect(state.isLoading, false);
       expect(state.casas.length, 22);
       expect(state.leiturasSalvas, isEmpty);
+      expect(state.leiturasMesAnterior, isEmpty);
     });
 
     test('carregarDados — exclui quiiosque (numero 23)', () async {
@@ -179,6 +182,10 @@ void main() {
       );
       when(() => casaRepo.buscarAtivas()).thenAnswer((_) async => casas);
       when(() => leituraRepo.buscarLeiturasPorMes(any())).thenAnswer((_) async => []);
+      when(() => leituraRepo.buscarLeituraCasa(any(), any()))
+          .thenAnswer((_) async => null);
+      when(() => leituraRepo.buscarUltimaLeitura(any()))
+          .thenAnswer((_) async => null);
 
       await notifier.carregarDados();
 
@@ -192,8 +199,10 @@ void main() {
       when(() => casaRepo.buscarAtivas()).thenAnswer((_) async => casas);
       when(() => leituraRepo.buscarLeiturasPorMes('04/2026'))
           .thenAnswer((_) async => []);
-      when(() => leituraRepo.buscarLeiturasPorMes('03/2026'))
-          .thenAnswer((_) async => []);
+      when(() => leituraRepo.buscarLeituraCasa(any(), '03/2026'))
+          .thenAnswer((_) async => null);
+      when(() => leituraRepo.buscarUltimaLeitura(any()))
+          .thenAnswer((_) async => null);
       when(() => leituraRepo.buscarLeituraCasa(casaId, '04/2026'))
           .thenAnswer((_) async => null);
       when(() => leituraRepo.salvarLeitura(any())).thenAnswer((_) async {});
@@ -207,6 +216,35 @@ void main() {
 
       expect(resultado, true);
       verify(() => leituraRepo.salvarLeitura(any())).called(1);
+    });
+
+    test('carregarDados — preenche anterior de mês não imediato', () async {
+      final casaId = 'casa-1';
+      final casas = [Casa(id: casaId, numero: 1, ativa: true)];
+      
+      // Simula que em 03/2026 não houve leitura, mas em 02/2026 sim (atual = 140)
+      final leituraFevereiro = Leitura(
+        id: 'l-feb',
+        mesAno: '02/2026',
+        casaId: casaId,
+        leituraAnteriorM3: 130,
+        leituraAtualM3: 140,
+      );
+
+      when(() => casaRepo.buscarAtivas()).thenAnswer((_) async => casas);
+      when(() => leituraRepo.buscarLeiturasPorMes('04/2026'))
+          .thenAnswer((_) async => []);
+      // Mês imediatamente anterior (03/2026) retorna null
+      when(() => leituraRepo.buscarLeituraCasa(casaId, '03/2026'))
+          .thenAnswer((_) async => null);
+      // buscarUltimaLeitura retorna a de fevereiro
+      when(() => leituraRepo.buscarUltimaLeitura(casaId))
+          .thenAnswer((_) async => leituraFevereiro);
+
+      await notifier.carregarDados();
+
+      final state = notifier.state;
+      expect(state.getLeituraAnterior(casaId), 140);
     });
 
     test('limparErro remove mensagem de erro', () async {

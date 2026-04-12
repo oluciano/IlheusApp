@@ -35,6 +35,8 @@ class CalcularCobrancaCasaUseCase {
   /// - [allLeituras]: Todas as leituras do mês (para cálculo de quiosque)
   /// - [somasDiasInadimplentes]: Soma total de dias de atraso de todos os inadimplentes (para juros proporcional)
   /// - [diasAtrasoCasa]: Dias de atraso desta casa (null = pagou ou está atualizado, para juros proporcional)
+  /// - [qtdCasasPagantes]: Número de casas que pagam (ativas e não-isentas). Usado como denominador para componentes igualitários.
+  /// - [consumoGeralPagantes]: Soma do consumo apenas das casas pagantes (em m³). Usado como denominador para rateio proporcional de água.
   ///
   /// Retorna: Cobranca com todos os componentes calculados e breakdown completo.
   Cobranca execute({
@@ -50,6 +52,8 @@ class CalcularCobrancaCasaUseCase {
     required List<Leitura> allLeituras,
     int somasDiasInadimplentes = 0,
     int? diasAtrasoCasa,
+    required int qtdCasasPagantes,
+    required int consumoGeralPagantes,
   }) {
     // Validações básicas
     if (leitura.consumoM3 < 0) {
@@ -65,7 +69,7 @@ class CalcularCobrancaCasaUseCase {
             configuracao.componenteAguaAtivo
             ? _calcularAgua(
                 leitura.consumoM3,
-                contaCorsan.consumoM3,
+                consumoGeralPagantes,
                 contaCorsan.valorAgua.centavos,
               )
             : 0;
@@ -82,18 +86,18 @@ class CalcularCobrancaCasaUseCase {
     final valorEsgoto =
         !casa.isento &&
             configuracao.componenteEsgotoAtivo
-            ? _calcularIgualitario(contaCorsan.valorEsgoto.centavos)
+            ? _calcularIgualitario(contaCorsan.valorEsgoto.centavos, qtdCasasPagantes)
             : 0;
 
     final valorServicoBasico = !casa.isento &&
             configuracao.componenteServicoBasicoAtivo
-        ? _calcularIgualitario(contaCorsan.valorServicoBasico.centavos)
+        ? _calcularIgualitario(contaCorsan.valorServicoBasico.centavos, qtdCasasPagantes)
         : 0;
 
     final valorLuz =
         !casa.isento &&
             configuracao.componenteLuzAtivo
-            ? _calcularIgualitario(contaLuz.valorTotal.centavos)
+            ? _calcularIgualitario(contaLuz.valorTotal.centavos, qtdCasasPagantes)
             : 0;
 
     // Condomínio: isento PAGA (regra de negócio)
@@ -181,11 +185,12 @@ class CalcularCobrancaCasaUseCase {
 
   /// Calcula rateio igualitário (esgoto, serviço básico, luz).
   ///
-  /// componente = valor_total / 22
+  /// componente = valor_total / qtdCasasPagantes
   ///
   /// Arredondamento: floor em centavo.
-  int _calcularIgualitario(int valorTotal) {
-    return (valorTotal / numCasasResidenciais).floor();
+  int _calcularIgualitario(int valorTotal, int qtdCasasPagantes) {
+    if (qtdCasasPagantes == 0) return 0;
+    return (valorTotal / qtdCasasPagantes).floor();
   }
 
   /// Calcula juros conforme modelo configurado.

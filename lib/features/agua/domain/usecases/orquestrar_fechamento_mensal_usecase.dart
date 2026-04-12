@@ -221,6 +221,8 @@ class OrquestrarFechamentoMensalUseCase {
           inadimplentesAnterior: inadimplentesAnterior,
           dataPagamento: null,
           allLeituras: leituras,
+          qtdCasasPagantes: numPagantes,
+          consumoGeralPagantes: consumoPagantes,
         );
 
         // Ajusta componentes equalitários com redistribuição de centavos
