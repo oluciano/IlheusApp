@@ -11,7 +11,6 @@ class LeituraDataSource {
 
 class LeituraRepositoryImpl implements LeituraRepository {
   final LeituraDataSource dataSource;
-  final _uuid = const Uuid();
 
   LeituraRepositoryImpl(this.dataSource);
 

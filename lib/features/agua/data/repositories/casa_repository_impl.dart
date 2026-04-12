@@ -11,7 +11,6 @@ class CasaDataSource {
 
 class CasaRepositoryImpl implements CasaRepository {
   final CasaDataSource dataSource;
-  final _uuid = const Uuid();
 
   CasaRepositoryImpl(this.dataSource);
 

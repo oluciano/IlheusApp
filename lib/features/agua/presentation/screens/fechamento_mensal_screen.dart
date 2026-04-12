@@ -93,6 +93,13 @@ class FechamentoMensalScreen extends ConsumerWidget {
           tooltip: 'Voltar',
         ),
         title: const Text('Fechamento do Mês'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => ref.invalidate(fechamentoMensalProvider(mesAno)),
+            tooltip: 'Atualizar Dados',
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(20),
           child: Text(mesAno, style: const TextStyle(fontSize: 14)),
@@ -114,8 +121,9 @@ class FechamentoMensalScreen extends ConsumerWidget {
                   _buildBloco3AuditoriaPrevia(state),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
-                    onPressed: () {
+                    onPressed: () async {
                       final mesAnoEncoded = Uri.encodeComponent(mesAno);
+                      ref.invalidate(fechamentoMensalProvider(mesAno));
                       context.push('/lancamento-leituras/$mesAnoEncoded');
                     },
                     icon: const Icon(Icons.edit_note),

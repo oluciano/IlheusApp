@@ -456,7 +456,7 @@ void main() {
                 debitosAbertos: [],
                 inadimplentesAnterior: 0,
                 dataPagamento: null,
-                allLeituras: leituras,
+                allLeituras: any(named: 'allLeituras'),
                 qtdCasasPagantes: any(named: 'qtdCasasPagantes'),
                 consumoGeralPagantes: any(named: 'consumoGeralPagantes'),
               )).thenReturn(cobrancas[i]);
@@ -593,7 +593,7 @@ void main() {
                 debitosAbertos: [],
                 inadimplentesAnterior: 0,
                 dataPagamento: null,
-                allLeituras: leituras,
+                allLeituras: any(named: 'allLeituras'),
                 qtdCasasPagantes: any(named: 'qtdCasasPagantes'),
                 consumoGeralPagantes: any(named: 'consumoGeralPagantes'),
               )).thenReturn(cobrancas[i]);
@@ -719,7 +719,7 @@ void main() {
                 debitosAbertos: [],
                 inadimplentesAnterior: 0,
                 dataPagamento: null,
-                allLeituras: leituras,
+                allLeituras: any(named: 'allLeituras'),
                 qtdCasasPagantes: any(named: 'qtdCasasPagantes'),
                 consumoGeralPagantes: any(named: 'consumoGeralPagantes'),
               )).thenReturn(cobrancas[i]);
@@ -843,7 +843,7 @@ void main() {
                 debitosAbertos: [],
                 inadimplentesAnterior: 0,
                 dataPagamento: null,
-                allLeituras: leituras,
+                allLeituras: any(named: 'allLeituras'),
                 qtdCasasPagantes: any(named: 'qtdCasasPagantes'),
                 consumoGeralPagantes: any(named: 'consumoGeralPagantes'),
               )).thenReturn(cobrancas[i]);
@@ -1001,7 +1001,7 @@ void main() {
                 debitosAbertos: debitosExpected,
                 inadimplentesAnterior: 0,
                 dataPagamento: null,
-                allLeituras: leituras,
+                allLeituras: any(named: 'allLeituras'),
                 qtdCasasPagantes: any(named: 'qtdCasasPagantes'),
                 consumoGeralPagantes: any(named: 'consumoGeralPagantes'),
               )).thenReturn(cobrancas[i]);
@@ -1138,7 +1138,7 @@ void main() {
                 debitosAbertos: [],
                 inadimplentesAnterior: 0,
                 dataPagamento: null,
-                allLeituras: leituras,
+                allLeituras: any(named: 'allLeituras'),
                 qtdCasasPagantes: any(named: 'qtdCasasPagantes'),
                 consumoGeralPagantes: any(named: 'consumoGeralPagantes'),
               )).thenReturn(cobrancas[i]);
